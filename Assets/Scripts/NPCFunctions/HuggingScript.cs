@@ -1,0 +1,45 @@
+﻿using UnityEngine;
+using UnityEngine.AI;
+
+public class HuggingScript : MonoBehaviour
+{
+	private void Start()
+	{
+		rb = GetComponent<Rigidbody>();
+	}
+	private void Update()
+	{
+		if (failSave > 0f)
+		{
+			failSave -= Time.deltaTime;
+		}
+		else
+		{
+			inBsoda = false;
+		}
+	}
+	private void FixedUpdate()
+	{
+		if (inBsoda)
+		{
+			rb.linearVelocity = otherVelocity;
+		}
+	}
+	private void OnTriggerStay(Collider other)
+	{
+		if (other.transform.name == "1st Prize")
+		{
+			inBsoda = true;
+			otherVelocity = rb.linearVelocity * 0.1f + other.GetComponent<NavMeshAgent>().velocity;
+			failSave = 1f;
+		}
+	}
+	private void OnTriggerExit()
+	{
+		inBsoda = false;
+	}
+	private Rigidbody rb;
+	private Vector3 otherVelocity;
+	public bool inBsoda;
+	private float failSave;
+}
