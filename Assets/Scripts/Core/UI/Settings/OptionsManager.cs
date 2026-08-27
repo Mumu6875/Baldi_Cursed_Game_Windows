@@ -6,6 +6,20 @@ public class OptionsManager : MonoBehaviour
 	private const string MouseSensitivityKey = "MouseSensitivity";
 	private const float DefaultMouseSensitivity = 2f;
 
+	private void Awake()
+	{
+		// These legacy options have no supported PC implementation in this mod.
+		// Hide them instead of presenting toggles that cannot affect gameplay.
+		if (rumble != null)
+		{
+			rumble.gameObject.SetActive(false);
+		}
+		if (analog != null)
+		{
+			analog.gameObject.SetActive(false);
+		}
+	}
+
 	private void Start()
 	{
 		if (!PlayerPrefs.HasKey(MouseSensitivityKey))
@@ -14,49 +28,13 @@ public class OptionsManager : MonoBehaviour
 		}
 		slider.value = Mathf.Clamp(PlayerPrefs.GetFloat(MouseSensitivityKey, DefaultMouseSensitivity), slider.minValue, slider.maxValue);
 
-		if (PlayerPrefs.HasKey("OptionsSet"))
-		{
-			if (PlayerPrefs.GetInt("Rumble") == 1)
-			{
-				rumble.isOn = true;
-			}
-			else
-			{
-				rumble.isOn = false;
-			}
-			if (PlayerPrefs.GetInt("AnalogMove") == 1)
-			{
-				analog.isOn = true;
-			}
-			else
-			{
-				analog.isOn = false;
-			}
-		}
-		else
-		{
-			PlayerPrefs.SetInt("OptionsSet", 1);
-		}
+		PlayerPrefs.SetInt("Rumble", 0);
+		PlayerPrefs.SetInt("AnalogMove", 0);
+		PlayerPrefs.Save();
 	}
 	private void Update()
 	{
 		PlayerPrefs.SetFloat(MouseSensitivityKey, slider.value);
-		if (rumble.isOn)
-		{
-			PlayerPrefs.SetInt("Rumble", 1);
-		}
-		else
-		{
-			PlayerPrefs.SetInt("Rumble", 0);
-		}
-		if (analog.isOn)
-		{
-			PlayerPrefs.SetInt("AnalogMove", 1);
-		}
-		else
-		{
-			PlayerPrefs.SetInt("AnalogMove", 0);
-		}
 	}
 	public Slider slider;
 	public Toggle rumble;

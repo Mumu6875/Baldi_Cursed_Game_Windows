@@ -6,7 +6,11 @@ using System.Collections;
 
 public class ControlsMenu : MonoBehaviour
 {
-    private void Awake() => allKeyCodes = (KeyCode[])Enum.GetValues(typeof(KeyCode));
+    private void Awake()
+    {
+        allKeyCodes = (KeyCode[])Enum.GetValues(typeof(KeyCode));
+        HideUnsupportedAction(InputAction.Jump);
+    }
 
     private void Start()
     {
@@ -34,13 +38,19 @@ public class ControlsMenu : MonoBehaviour
         UpdateAllButtonTexts();
     }
 
-    private void OnDisable() => inputMan.Save();
+    private void OnDisable()
+    {
+        if (inputMan != null)
+        {
+            inputMan.Save();
+        }
+    }
 
     public void UpdateAllButtonTexts()
     {
         for (int i = 0; i < labelTexts.Length; i++)
         {
-            if (i < Enum.GetValues(typeof(InputAction)).Length)
+            if (i < (int)InputAction.Count && IsBindableAction((InputAction)i))
             {
                 InputAction action = (InputAction)i;
                 if (inputMan.KeyboardMapping.TryGetValue(action, out InputBinding binding))
@@ -79,6 +89,10 @@ public class ControlsMenu : MonoBehaviour
             case KeyCode.Mouse0: return "Left Mouse Button";
             case KeyCode.Mouse1: return "Right Mouse Button";
             case KeyCode.Mouse2: return "Middle Mouse Button";
+            case KeyCode.Mouse3: return "Mouse Button 4";
+            case KeyCode.Mouse4: return "Mouse Button 5";
+            case KeyCode.Mouse5: return "Mouse Button 6";
+            case KeyCode.Mouse6: return "Mouse Button 7";
             default: return mouseKey.ToString();
         }
     }
@@ -90,7 +104,7 @@ public class ControlsMenu : MonoBehaviour
             return;
         }
 
-        if (actionIndex < Enum.GetValues(typeof(InputAction)).Length)
+        if (IsValidBindableActionIndex(actionIndex))
         {
             currentActionIndex = actionIndex;
             isBindingMouseInput = false;
@@ -109,7 +123,7 @@ public class ControlsMenu : MonoBehaviour
             return;
         }
 
-        if (actionIndex < Enum.GetValues(typeof(InputAction)).Length)
+        if (IsValidBindableActionIndex(actionIndex))
         {
             currentActionIndex = actionIndex;
             isBindingMouseInput = true;
@@ -258,7 +272,51 @@ public class ControlsMenu : MonoBehaviour
 
     private bool IsMouseKey(KeyCode key)
     {
-        return key == KeyCode.Mouse0 || key == KeyCode.Mouse1 || key == KeyCode.Mouse2 || key == KeyCode.Mouse3 || key == KeyCode.Mouse4;
+        int keyValue = (int)key;
+        return keyValue >= (int)KeyCode.Mouse0 && keyValue <= (int)KeyCode.Mouse6;
+    }
+
+    private static bool IsBindableAction(InputAction action)
+    {
+        // Jump only belonged to Playtime's jump-rope event, which is not part of this mod.
+        return action != InputAction.Jump;
+    }
+
+    private static bool IsValidBindableActionIndex(int actionIndex)
+    {
+        return actionIndex >= 0 && actionIndex < (int)InputAction.Count && IsBindableAction((InputAction)actionIndex);
+    }
+
+    private void HideUnsupportedAction(InputAction action)
+    {
+        int actionIndex = (int)action;
+        int actionCount = (int)InputAction.Count;
+
+        if (actionIndex < labelTexts.Length && labelTexts[actionIndex] != null)
+        {
+            labelTexts[actionIndex].gameObject.SetActive(false);
+        }
+
+        if (actionIndex < buttonTexts.Length && buttonTexts[actionIndex] != null)
+        {
+            buttonTexts[actionIndex].transform.parent.gameObject.SetActive(false);
+        }
+
+        if (actionIndex < secondaryButtonTexts.Length && secondaryButtonTexts[actionIndex] != null)
+        {
+            secondaryButtonTexts[actionIndex].transform.parent.gameObject.SetActive(false);
+        }
+
+        if (actionIndex < allButtons.Length && allButtons[actionIndex] != null)
+        {
+            allButtons[actionIndex].gameObject.SetActive(false);
+        }
+
+        int secondaryButtonIndex = actionCount + actionIndex;
+        if (secondaryButtonIndex < allButtons.Length && allButtons[secondaryButtonIndex] != null)
+        {
+            allButtons[secondaryButtonIndex].gameObject.SetActive(false);
+        }
     }
 
     private void SetButtonsInteractable(bool state)

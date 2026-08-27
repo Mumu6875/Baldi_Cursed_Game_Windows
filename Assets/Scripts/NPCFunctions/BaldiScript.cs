@@ -27,10 +27,6 @@ public class BaldiScript : MonoBehaviour
 		agent = GetComponent<NavMeshAgent>(); //Get the Nav Mesh Agent
 		timeToMove = baseTime; //Sets timeToMove to baseTime
 		Wander(); //Start wandering
-		if (PlayerPrefs.GetInt("Rumble") == 1)
-		{
-			rumble = true;
-		}
 	}
 	private void Update()
 	{
@@ -110,14 +106,6 @@ public class BaldiScript : MonoBehaviour
 		previous = transform.position; // Set previous to Baldi's current location
 		baldiAudio.PlayOneShot(slap); //Play the slap sound
 		baldiAnimator.SetTrigger("slap"); // Play the slap animation
-		if (rumble)
-		{
-			float num = Vector3.Distance(transform.position, player.position);
-			if (num < vibrationDistance)
-			{
-				float motorLevel = 1f - num / vibrationDistance;
-			}
-		}
 	}
 	public void GetAngry(float value)
 	{
@@ -171,6 +159,5 @@ public class BaldiScript : MonoBehaviour
 	public Animator baldiAnimator;
 	public float coolDown;
 	private Vector3 previous;
-	private bool rumble;
 	private NavMeshAgent agent;
 }

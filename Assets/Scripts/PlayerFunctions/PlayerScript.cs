@@ -7,10 +7,6 @@ public class PlayerScript : MonoBehaviour
 {
 	private void Start()
 	{
-		if (PlayerPrefs.GetInt("AnalogMove") == 1)
-		{
-			sensitivityActive = true;
-		}
 		height = transform.position.y;
 		stamina = maxStamina;
 		playerRotation = transform.rotation;
@@ -54,18 +50,15 @@ public class PlayerScript : MonoBehaviour
 	{
 		Vector3 movement = Vector3.zero;
 		Vector3 lateralMovement = Vector3.zero;
-		float inputMagnitude;
 		if (Singleton<InputManager>.Instance.GetActionKey(InputAction.MoveForward)) movement = transform.forward;
 		if (Singleton<InputManager>.Instance.GetActionKey(InputAction.MoveBackward)) movement = -transform.forward;
 		if (Singleton<InputManager>.Instance.GetActionKey(InputAction.MoveLeft)) lateralMovement = -transform.right;
 		if (Singleton<InputManager>.Instance.GetActionKey(InputAction.MoveRight)) lateralMovement = transform.right;
-		inputMagnitude = Mathf.Clamp01((movement + lateralMovement).magnitude);
 		if (stamina > 0f)
 		{
 			if (Singleton<InputManager>.Instance.GetActionKey(InputAction.Run))
 			{
 				playerSpeed = runSpeed;
-				sensitivity = 1f;
 				if (cc.velocity.magnitude > 0.1f & !hugging & !sweeping)
 				{
 					ResetGuilt("running", 0.1f);
@@ -74,30 +67,14 @@ public class PlayerScript : MonoBehaviour
 			else
 			{
 				playerSpeed = walkSpeed;
-				if (sensitivityActive)
-				{
-					sensitivity = inputMagnitude;
-				}
-				else
-				{
-					sensitivity = 1f;
-				}
 			}
 		}
 		else
 		{
 			playerSpeed = walkSpeed;
-			if (sensitivityActive)
-			{
-				sensitivity = inputMagnitude;
-			}
-			else
-			{
-				sensitivity = 1f;
-			}
 		}
 		playerSpeed *= Time.deltaTime;
-		moveDirection = (movement + lateralMovement).normalized * playerSpeed * sensitivity;
+		moveDirection = (movement + lateralMovement).normalized * playerSpeed;
 		if (!(!jumpRope & !sweeping & !hugging))
 		{
 			if (sweeping && !bootsActive)
@@ -242,8 +219,6 @@ public class PlayerScript : MonoBehaviour
 	public float flipaturn;
 	private Quaternion playerRotation;
 	public Vector3 frozenPosition;
-	private bool sensitivityActive;
-	private float sensitivity;
 	public float mouseSensitivity;
 	public float walkSpeed;
 	public float runSpeed;
