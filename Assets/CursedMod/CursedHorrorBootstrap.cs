@@ -407,6 +407,8 @@ public static class CursedThinkPadInstaller
         image.color = new Color(0.82f, 0.82f, 0.82f, 1f);
         image.raycastTarget = false;
 
+        AlignResultMarks(math, root.transform);
+
         // Build fresh hit regions from the exact normalized pixel bounds in the
         // 1536x1024 cursed artwork. These scale together with the skin on every
         // aspect ratio and bypass the differently spaced stock keypad entirely.
@@ -431,6 +433,48 @@ public static class CursedThinkPadInstaller
         CreateKey(controls.transform, "0", new Vector2(0.7513f, 0.4346f), new Vector2(0.8828f, 0.5400f), math, 0, false);
         CreateKey(controls.transform, "Minus", new Vector2(0.8919f, 0.4307f), new Vector2(0.9518f, 0.5381f), math, -1, false);
         CreateKey(controls.transform, "OK", new Vector2(0.7565f, 0.1152f), new Vector2(0.9303f, 0.3838f), math, 0, true);
+    }
+
+    private static void AlignResultMarks(MathGameScript math, Transform root)
+    {
+        if (math.results == null || math.results.Length == 0) return;
+
+        // The stock result marks were positioned for the original Think Pad.
+        // Reparent them to a full-screen layer and anchor their centres to the
+        // three green status windows painted into the 1536x1024 cursed skin.
+        Vector2[] markAnchors =
+        {
+            new Vector2(0.1123f, 0.8369f),
+            new Vector2(0.1123f, 0.6802f),
+            new Vector2(0.1123f, 0.5269f)
+        };
+
+        GameObject layer = new GameObject("Cursed Result Marks", typeof(RectTransform));
+        layer.transform.SetParent(root, false);
+        RectTransform layerRect = layer.GetComponent<RectTransform>();
+        layerRect.anchorMin = Vector2.zero;
+        layerRect.anchorMax = Vector2.one;
+        layerRect.offsetMin = Vector2.zero;
+        layerRect.offsetMax = Vector2.zero;
+        layer.transform.SetAsLastSibling();
+
+        int count = Mathf.Min(math.results.Length, markAnchors.Length);
+        for (int i = 0; i < count; i++)
+        {
+            RawImage result = math.results[i];
+            if (result == null) continue;
+
+            RectTransform resultRect = result.rectTransform;
+            resultRect.SetParent(layerRect, false);
+            resultRect.anchorMin = markAnchors[i];
+            resultRect.anchorMax = markAnchors[i];
+            resultRect.pivot = new Vector2(0.5f, 0.5f);
+            resultRect.anchoredPosition = Vector2.zero;
+            resultRect.sizeDelta = new Vector2(53f, 53f);
+            resultRect.localRotation = Quaternion.identity;
+            resultRect.localScale = Vector3.one;
+            result.raycastTarget = false;
+        }
     }
 
     private static void CreateKey(Transform parent, string keyName, Vector2 anchorMin, Vector2 anchorMax, MathGameScript math, int value, bool submit)
