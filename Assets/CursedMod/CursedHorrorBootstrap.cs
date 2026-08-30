@@ -641,3 +641,115 @@ public class CursedJumpscarePulse : MonoBehaviour
         }
     }
 }
+
+/// <summary>
+/// Briefly transforms the visible Think Pad portrait into Cursed Baldi after
+/// the first Phase 2 wrong answer. The overlay belongs to the current MathGame
+/// instance, so it is destroyed when that notebook closes. Later notebooks
+/// keep using MathGameScript's existing spoop-mode portrait hiding behavior.
+/// </summary>
+public sealed class CursedBaldiPortraitTransition : MonoBehaviour
+{
+    private const float Duration = 2.4f;
+    private static readonly Rect CursedPortraitCrop = new Rect(0.19f, 0.58f, 0.62f, 0.42f);
+
+    private Image normalPortrait;
+    private RawImage cursedPortrait;
+    private RectTransform cursedRect;
+    private Color normalColor;
+    private Coroutine transitionRoutine;
+
+    public static void Play(Animator baldiFeed)
+    {
+        if (baldiFeed == null || !baldiFeed.gameObject.activeInHierarchy) return;
+
+        CursedBaldiPortraitTransition transition = baldiFeed.GetComponent<CursedBaldiPortraitTransition>();
+        if (transition == null)
+        {
+            transition = baldiFeed.gameObject.AddComponent<CursedBaldiPortraitTransition>();
+        }
+        transition.Begin();
+    }
+
+    private void Begin()
+    {
+        if (transitionRoutine != null || cursedPortrait != null) return;
+
+        normalPortrait = GetComponent<Image>();
+        Texture2D cursedTexture = Resources.Load<Texture2D>("CursedMod/CursedBaldi");
+        if (normalPortrait == null || cursedTexture == null) return;
+
+        normalColor = normalPortrait.color;
+
+        GameObject portraitObject = new GameObject(
+            "Cursed Baldi Portrait Transition",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(RawImage));
+        portraitObject.transform.SetParent(transform, false);
+        portraitObject.transform.SetAsLastSibling();
+
+        cursedRect = portraitObject.GetComponent<RectTransform>();
+        cursedRect.anchorMin = Vector2.zero;
+        cursedRect.anchorMax = Vector2.one;
+        cursedRect.offsetMin = Vector2.zero;
+        cursedRect.offsetMax = Vector2.zero;
+        cursedRect.pivot = new Vector2(0.5f, 0.5f);
+
+        cursedPortrait = portraitObject.GetComponent<RawImage>();
+        cursedPortrait.texture = cursedTexture;
+        cursedPortrait.uvRect = CursedPortraitCrop;
+        cursedPortrait.raycastTarget = false;
+        cursedPortrait.color = new Color(1f, 1f, 1f, 0f);
+
+        transitionRoutine = StartCoroutine(TransformPortrait());
+    }
+
+    private IEnumerator TransformPortrait()
+    {
+        float elapsed = 0f;
+        while (elapsed < Duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = Mathf.Clamp01(elapsed / Duration);
+            float reveal = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.08f, 0.88f, progress));
+
+            // Early frames deliberately drop out for a corrupted, unstable
+            // transition. The final portion is stable and fully readable.
+            float flicker = 1f;
+            if (progress < 0.82f && Random.value < Mathf.Lerp(0.32f, 0.08f, progress))
+            {
+                flicker = Random.Range(0.18f, 0.68f);
+            }
+
+            float redTint = Mathf.Lerp(1f, 0.78f, progress);
+            float otherTint = Mathf.Lerp(1f, 0.52f, progress);
+            cursedPortrait.color = new Color(redTint, otherTint, otherTint, reveal * flicker);
+
+            float shake = Mathf.Lerp(1.5f, 7f, reveal) * (1f - Mathf.SmoothStep(0.78f, 1f, progress));
+            cursedRect.anchoredPosition = Random.insideUnitCircle * shake;
+            float pulse = 1.08f - 0.08f * reveal + Mathf.Sin(elapsed * 31f) * 0.018f * (1f - progress);
+            cursedRect.localScale = new Vector3(pulse, pulse, 1f);
+
+            float normalBrightness = Mathf.Lerp(1f, 0.28f, reveal);
+            normalPortrait.color = new Color(
+                normalColor.r * normalBrightness,
+                normalColor.g * normalBrightness,
+                normalColor.b * normalBrightness,
+                normalColor.a);
+
+            yield return null;
+        }
+
+        cursedRect.anchoredPosition = Vector2.zero;
+        cursedRect.localScale = Vector3.one;
+        cursedPortrait.color = Color.white;
+        normalPortrait.color = normalColor;
+        transitionRoutine = null;
+    }
+
+    private void OnDestroy()
+    {
+        if (normalPortrait != null) normalPortrait.color = normalColor;
+    }
+}

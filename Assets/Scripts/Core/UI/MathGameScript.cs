@@ -336,6 +336,10 @@ public class MathGameScript : MonoBehaviour
                 if (!gc.spoopMode)
                 {
                     baldiFeed.SetTrigger("angry");
+                    if (CursedPhaseManager.IsPhase2)
+                    {
+                        CursedBaldiPortraitTransition.Play(baldiFeed);
+                    }
                     gc.ActivateSpoopMode();
                 }
                 if (problem == 3)
