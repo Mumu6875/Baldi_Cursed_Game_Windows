@@ -114,6 +114,7 @@ public sealed class CursedBuildValidation : IPreprocessBuildWithReport
     private const string WarningAssetPath = "Assets/Resources/CursedMod/PiracyWarningPhase1.jpg";
     private const string RulerAudioAssetPath = "Assets/Resources/CursedMod/BaldiRulerLoud.ogg";
     private const string HelpMeExitAssetPath = "Assets/Resources/CursedMod/HelpMeExitSign.png";
+    private const string Phase2SchoolRulesAssetPath = "Assets/Resources/CursedMod/SchoolRulesPosterPhase2.png";
     private const string Phase2CompletionAssetPath = "Assets/Resources/CursedMod/Phase2Completion.png";
     private const string Phase3PasswordAssetPath = "Assets/Resources/CursedMod/Phase3Password.png";
     private const string Phase4FinalAssetPath = "Assets/Resources/CursedMod/Phase4Final.png";
@@ -152,6 +153,17 @@ public sealed class CursedBuildValidation : IPreprocessBuildWithReport
             throw new BuildFailedException("Phase 2 HELP ME exit sign must be exactly 128x128: " + HelpMeExitAssetPath);
         }
         Debug.Log("Verified Phase 2 HELP ME exit sign: " + helpMeExit.width + "x" + helpMeExit.height);
+
+        if (!File.Exists(Phase2SchoolRulesAssetPath))
+        {
+            throw new BuildFailedException("Required Phase 2 school rules poster is missing: " + Phase2SchoolRulesAssetPath);
+        }
+        Texture2D phase2SchoolRules = ImportTextureWithoutNpotScaling(Phase2SchoolRulesAssetPath);
+        if (phase2SchoolRules == null || phase2SchoolRules.width != 256 || phase2SchoolRules.height != 256)
+        {
+            throw new BuildFailedException("Phase 2 school rules poster must be exactly 256x256: " + Phase2SchoolRulesAssetPath + FormatImportedSize(phase2SchoolRules));
+        }
+        Debug.Log("Verified Phase 2 school rules poster: " + phase2SchoolRules.width + "x" + phase2SchoolRules.height);
 
         if (!File.Exists(Phase2CompletionAssetPath))
         {

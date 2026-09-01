@@ -13,6 +13,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
     private Texture2D cursedBaldiTexture;
     private Texture2D cursedThinkPadTexture;
     private Texture2D helpMeExitTexture;
+    private Texture2D phase2SchoolRulesTexture;
     private Sprite cursedBaldiSprite;
     private Sprite helpMeExitSprite;
     private Image dangerFlash;
@@ -43,6 +44,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
         cursedBaldiTexture = Resources.Load<Texture2D>("CursedMod/CursedBaldi");
         cursedThinkPadTexture = Resources.Load<Texture2D>("CursedMod/CursedThinkPad");
         helpMeExitTexture = Resources.Load<Texture2D>("CursedMod/HelpMeExitSign");
+        phase2SchoolRulesTexture = Resources.Load<Texture2D>("CursedMod/SchoolRulesPosterPhase2");
         if (cursedBaldiTexture != null)
         {
             // Account for the different transparent bottom padding so the
@@ -106,6 +108,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
             if (CursedPhaseManager.IsPhase2)
             {
                 PatchExitSigns();
+                PatchPhase2SchoolRulesPosters();
             }
             if (horrorActive)
             {
@@ -140,6 +143,56 @@ public class CursedHorrorBootstrap : MonoBehaviour
             patched++;
         }
         Debug.Log("Phase 2 HELP ME exit signs applied: " + patched);
+    }
+
+    private void PatchPhase2SchoolRulesPosters()
+    {
+        if (phase2SchoolRulesTexture == null)
+        {
+            Debug.LogError("Phase 2 school rules poster texture could not be loaded.");
+            return;
+        }
+
+        int patched = 0;
+        Renderer[] renderers = Resources.FindObjectsOfTypeAll<Renderer>();
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (!renderer.gameObject.scene.IsValid()) continue;
+
+            Material[] sharedMaterials = renderer.sharedMaterials;
+            bool containsSchoolRulesPoster = false;
+            for (int materialIndex = 0; materialIndex < sharedMaterials.Length; materialIndex++)
+            {
+                Material material = sharedMaterials[materialIndex];
+                if (material == null) continue;
+                if (material.name.StartsWith("SchoolRulesPoster") ||
+                    (material.mainTexture != null && material.mainTexture.name == "SchoolRulesPoster"))
+                {
+                    containsSchoolRulesPoster = true;
+                    break;
+                }
+            }
+            if (!containsSchoolRulesPoster) continue;
+
+            Material[] materials = renderer.materials;
+            for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+            {
+                Material material = materials[materialIndex];
+                if (material == null) continue;
+                if (!material.name.StartsWith("SchoolRulesPoster") &&
+                    (material.mainTexture == null || material.mainTexture.name != "SchoolRulesPoster"))
+                {
+                    continue;
+                }
+
+                material.mainTexture = phase2SchoolRulesTexture;
+                patched++;
+            }
+            renderer.materials = materials;
+        }
+
+        Debug.Log("Phase 2 school rules posters applied: " + patched);
     }
 
     private static void ApplyPhase2MusicSpeed(Scene scene)
