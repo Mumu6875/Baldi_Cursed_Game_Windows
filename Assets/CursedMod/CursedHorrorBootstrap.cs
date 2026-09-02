@@ -14,6 +14,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
     private Texture2D cursedThinkPadTexture;
     private Texture2D helpMeExitTexture;
     private Texture2D phase2SchoolRulesTexture;
+    private Texture2D phase2MathBlackboardTexture;
     private Sprite cursedBaldiSprite;
     private Sprite helpMeExitSprite;
     private Image dangerFlash;
@@ -45,6 +46,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
         cursedThinkPadTexture = Resources.Load<Texture2D>("CursedMod/CursedThinkPad");
         helpMeExitTexture = Resources.Load<Texture2D>("CursedMod/HelpMeExitSign");
         phase2SchoolRulesTexture = Resources.Load<Texture2D>("CursedMod/SchoolRulesPosterPhase2");
+        phase2MathBlackboardTexture = Resources.Load<Texture2D>("CursedMod/MathBlackboardPhase2");
         if (cursedBaldiTexture != null)
         {
             // Account for the different transparent bottom padding so the
@@ -107,8 +109,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
             CursedFinalExitSequence.EnsureInstalled();
             if (CursedPhaseManager.IsPhase2)
             {
-                PatchExitSigns();
-                PatchPhase2SchoolRulesPosters();
+                PatchPhase2SceneVisuals();
             }
             if (horrorActive)
             {
@@ -122,6 +123,13 @@ public class CursedHorrorBootstrap : MonoBehaviour
         {
             InstallGameOverImage();
         }
+    }
+
+    private void PatchPhase2SceneVisuals()
+    {
+        PatchExitSigns();
+        PatchPhase2SchoolRulesPosters();
+        PatchPhase2MathBlackboards();
     }
 
     private void PatchExitSigns()
@@ -193,6 +201,53 @@ public class CursedHorrorBootstrap : MonoBehaviour
         }
 
         Debug.Log("Phase 2 school rules posters applied: " + patched);
+    }
+
+    private void PatchPhase2MathBlackboards()
+    {
+        if (phase2MathBlackboardTexture == null)
+        {
+            Debug.LogError("Phase 2 Math blackboard texture could not be loaded.");
+            return;
+        }
+
+        int patched = 0;
+        Renderer[] renderers = Resources.FindObjectsOfTypeAll<Renderer>();
+        for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+        {
+            Renderer renderer = renderers[rendererIndex];
+            if (!renderer.gameObject.scene.IsValid()) continue;
+
+            Material[] sharedMaterials = renderer.sharedMaterials;
+            bool containsMathBlackboard = false;
+            for (int materialIndex = 0; materialIndex < sharedMaterials.Length; materialIndex++)
+            {
+                if (!IsMathBlackboardMaterial(sharedMaterials[materialIndex])) continue;
+                containsMathBlackboard = true;
+                break;
+            }
+            if (!containsMathBlackboard) continue;
+
+            Material[] materials = renderer.materials;
+            int materialCount = Mathf.Min(sharedMaterials.Length, materials.Length);
+            for (int materialIndex = 0; materialIndex < materialCount; materialIndex++)
+            {
+                if (!IsMathBlackboardMaterial(sharedMaterials[materialIndex])) continue;
+                materials[materialIndex].mainTexture = phase2MathBlackboardTexture;
+                patched++;
+            }
+            renderer.materials = materials;
+        }
+
+        Debug.Log("Phase 2 cursed Math blackboards applied: " + patched);
+    }
+
+    private static bool IsMathBlackboardMaterial(Material material)
+    {
+        return material != null &&
+               material.name == "Math" &&
+               material.mainTexture != null &&
+               material.mainTexture.name == "Math";
     }
 
     private static void ApplyPhase2MusicSpeed(Scene scene)
