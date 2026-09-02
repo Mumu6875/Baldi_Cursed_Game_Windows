@@ -30,6 +30,8 @@ public class PauseMenuScript : MonoBehaviour
     private TextMeshProUGUI sensitivityValue;
     private Slider sensitivitySlider;
     private InputManager inputManager;
+    private GameObject baldiYesButton;
+    private GameObject baldiNoButton;
     private readonly Dictionary<InputAction, TextMeshProUGUI> bindingLabels = new Dictionary<InputAction, TextMeshProUGUI>();
     private Coroutine bindingRoutine;
 
@@ -69,6 +71,15 @@ public class PauseMenuScript : MonoBehaviour
 
     private void DisableLegacyInterface()
     {
+        Transform oldButtons = transform.Find("PauseButtons");
+        if (oldButtons != null)
+        {
+            Transform yes = oldButtons.Find("BaldiNodButton");
+            Transform no = oldButtons.Find("BaldiShakeButton");
+            if (yes != null) baldiYesButton = yes.gameObject;
+            if (no != null) baldiNoButton = no.gameObject;
+        }
+
         for (int i = 0; i < transform.childCount; i++)
         {
             transform.GetChild(i).gameObject.SetActive(false);
@@ -97,15 +108,16 @@ public class PauseMenuScript : MonoBehaviour
             new Vector2(0.58f, 0f), new Vector2(0.96f, 1f));
 
         GameObject sidebar = CreateImage("Navigation", frame.transform, new Color(0.035f, 0.042f, 0.058f, 1f));
-        SetAnchors(sidebar.GetComponent<RectTransform>(), 0f, 0f, 0.255f, 0.835f);
+        SetAnchors(sidebar.GetComponent<RectTransform>(), 0f, 0.19f, 0.255f, 0.835f);
         AddNavigation(sidebar.transform);
 
         RectTransform contentRoot = CreateRect("Content", frame.transform);
-        SetAnchors(contentRoot, 0.275f, 0.035f, 0.975f, 0.805f);
+        SetAnchors(contentRoot, 0.275f, 0.21f, 0.975f, 0.805f);
         homePage = BuildHomePage(contentRoot);
         storyPage = BuildStoryPage(contentRoot);
         settingsPage = BuildSettingsPage(contentRoot);
         controlsPage = BuildControlsPage(contentRoot);
+        BuildBaldiQuitFooter(frame.transform);
         BuildBindingOverlay(overlay.transform);
         ShowPage(Page.Home);
     }
@@ -114,11 +126,49 @@ public class PauseMenuScript : MonoBehaviour
     {
         CreateText("Nav Caption", parent, "PAUSE MENU", 13f, FontStyles.Bold, TextAlignmentOptions.Center, Muted,
             new Vector2(0.08f, 0.87f), new Vector2(0.92f, 0.98f));
-        CreateButton("Resume", parent, "RESUME", new Vector2(0.09f, 0.70f), new Vector2(0.91f, 0.84f), delegate { gc.UnpauseGame(); }, true);
-        CreateButton("Story", parent, "STORY", new Vector2(0.09f, 0.53f), new Vector2(0.91f, 0.67f), delegate { ShowPage(Page.Story); }, false);
-        CreateButton("Settings", parent, "SETTINGS", new Vector2(0.09f, 0.36f), new Vector2(0.91f, 0.50f), delegate { ShowPage(Page.Settings); }, false);
-        CreateButton("Controls", parent, "CONTROLS", new Vector2(0.09f, 0.19f), new Vector2(0.91f, 0.33f), delegate { ShowPage(Page.Controls); }, false);
-        CreateButton("Main Menu", parent, "MAIN MENU", new Vector2(0.09f, 0.02f), new Vector2(0.91f, 0.16f), delegate { gc.ExitGame(); }, false);
+        CreateButton("Resume", parent, "RESUME", new Vector2(0.09f, 0.69f), new Vector2(0.91f, 0.85f), delegate { gc.UnpauseGame(); }, true);
+        CreateButton("Story", parent, "STORY", new Vector2(0.09f, 0.49f), new Vector2(0.91f, 0.65f), delegate { ShowPage(Page.Story); }, false);
+        CreateButton("Settings", parent, "SETTINGS", new Vector2(0.09f, 0.29f), new Vector2(0.91f, 0.45f), delegate { ShowPage(Page.Settings); }, false);
+        CreateButton("Controls", parent, "CONTROLS", new Vector2(0.09f, 0.09f), new Vector2(0.91f, 0.25f), delegate { ShowPage(Page.Controls); }, false);
+    }
+
+    private void BuildBaldiQuitFooter(Transform parent)
+    {
+        GameObject footer = CreateImage("Baldi Quit Footer", parent, new Color(0.025f, 0.03f, 0.045f, 1f));
+        SetAnchors(footer.GetComponent<RectTransform>(), 0f, 0f, 1f, 0.18f);
+        CreateText("Quit Prompt", footer.transform, "QUIT TO MAIN MENU?", 16f, FontStyles.Bold,
+            TextAlignmentOptions.Center, Color.white, new Vector2(0.03f, 0.08f), new Vector2(0.43f, 0.92f));
+
+        if (baldiYesButton == null || baldiNoButton == null)
+        {
+            Debug.LogWarning("The original Baldi Yes/No pause buttons could not be found.");
+            CreateButton("Fallback Yes", footer.transform, "YES", new Vector2(0.48f, 0.20f), new Vector2(0.68f, 0.80f),
+                delegate { gc.ExitGame(); }, false);
+            CreateButton("Fallback No", footer.transform, "NO", new Vector2(0.73f, 0.20f), new Vector2(0.93f, 0.80f),
+                delegate { gc.UnpauseGame(); }, false);
+            return;
+        }
+
+        PlaceBaldiButton(baldiYesButton, footer.transform, new Vector2(0.58f, 0.46f));
+        PlaceBaldiButton(baldiNoButton, footer.transform, new Vector2(0.82f, 0.46f));
+        CreateText("Yes Label", footer.transform, "YES", 12f, FontStyles.Bold, TextAlignmentOptions.Center,
+            accent, new Vector2(0.49f, 0.70f), new Vector2(0.67f, 0.98f));
+        CreateText("No Label", footer.transform, "NO", 12f, FontStyles.Bold, TextAlignmentOptions.Center,
+            Muted, new Vector2(0.73f, 0.70f), new Vector2(0.91f, 0.98f));
+    }
+
+    private static void PlaceBaldiButton(GameObject button, Transform parent, Vector2 anchor)
+    {
+        button.transform.SetParent(parent, false);
+        button.SetActive(true);
+        RectTransform rect = button.GetComponent<RectTransform>();
+        rect.anchorMin = anchor;
+        rect.anchorMax = anchor;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = new Vector2(64f, 64f);
+        Image image = button.GetComponent<Image>();
+        if (image != null) image.preserveAspect = true;
     }
 
     private GameObject BuildHomePage(Transform parent)
@@ -417,6 +467,7 @@ public class PauseMenuScript : MonoBehaviour
         text.fontStyle = style;
         text.alignment = alignment;
         text.color = color;
+        text.raycastTarget = false;
         text.enableWordWrapping = true;
         return text;
     }
@@ -431,6 +482,7 @@ public class PauseMenuScript : MonoBehaviour
         text.fontSize = size;
         text.color = color;
         text.alignment = TextAlignmentOptions.TopLeft;
+        text.raycastTarget = false;
         text.enableWordWrapping = true;
         return text;
     }
@@ -448,6 +500,7 @@ public class PauseMenuScript : MonoBehaviour
         text.fontSize = size;
         text.color = color;
         text.alignment = TextAlignmentOptions.MidlineLeft;
+        text.raycastTarget = false;
         return text;
     }
 
