@@ -1,4 +1,5 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -9,6 +10,18 @@ using UnityEngine.UI;
 /// </summary>
 public class CursedHorrorBootstrap : MonoBehaviour
 {
+    private const string Phase2StoryText =
+        "Story:\n\n" +
+        "Oh noes! School is out, but <color=#FF0000>BALD.ENTITY has a problem!</color> " +
+        "He left all his noteboos in school, but doesn't have time to go get them, " +
+        "<color=#FF0000>because if he does he'll be late for ekatsim a ma I pracitce.</color> " +
+        "To help him out, you have to go back in the school and find all 7 of his notebooks for him. " +
+        "It won't be easy though! " +
+        "<color=#FF0000>BALD.ENTITY loves challenging his students with fun trivia problems whenever he can!</color> " +
+        "Each time you find a notebook, you'll have to answer some questions. " +
+        "Answer all three correctly, and you will earn a prize! Find all 7 notebooks, " +
+        "<color=#FF0000>and then get stuck in the school!</color>";
+
     private static CursedHorrorBootstrap instance;
     private Texture2D cursedBaldiTexture;
     private Texture2D cursedThinkPadTexture;
@@ -102,6 +115,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
 
         // Repeat after one frame as a safety net for objects instantiated by Start().
         ApplyPhase2MusicSpeed(scene);
+        PatchPhase2StoryText(scene);
 
         bool gameplay = FindFirstObjectByType<PlayerScript>() != null || FindFirstObjectByType<PlayerMovement>() != null;
         if (gameplay)
@@ -130,6 +144,44 @@ public class CursedHorrorBootstrap : MonoBehaviour
         PatchExitSigns();
         PatchPhase2SchoolRulesPosters();
         PatchPhase2MathBlackboards();
+    }
+
+    private static void PatchPhase2StoryText(Scene scene)
+    {
+        if (scene.name != "MainMenu" ||
+            !CursedPhaseManager.IsPhase2 ||
+            CursedPhaseManager.IsPhase3 ||
+            CursedPhaseManager.IsPhase4)
+        {
+            return;
+        }
+
+        int patched = 0;
+        TextMeshProUGUI[] textComponents = Resources.FindObjectsOfTypeAll<TextMeshProUGUI>();
+        for (int i = 0; i < textComponents.Length; i++)
+        {
+            TextMeshProUGUI textComponent = textComponents[i];
+            if (!textComponent.gameObject.scene.IsValid() || textComponent.gameObject.scene != scene) continue;
+            if (string.IsNullOrEmpty(textComponent.text)) continue;
+            if (!textComponent.text.StartsWith("Story:") ||
+                !textComponent.text.Contains("your friend has a problem!") ||
+                !textComponent.text.Contains("Find all 7 notebooks"))
+            {
+                continue;
+            }
+
+            textComponent.richText = true;
+            textComponent.text = Phase2StoryText;
+            patched++;
+        }
+
+        if (patched == 0)
+        {
+            Debug.LogWarning("Phase 2 Story TMP text was not found in MainMenu.");
+            return;
+        }
+
+        Debug.Log("Phase 2 cursed Story TMP text applied: " + patched);
     }
 
     private void PatchExitSigns()
