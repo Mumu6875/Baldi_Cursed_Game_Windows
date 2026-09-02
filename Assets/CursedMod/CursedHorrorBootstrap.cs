@@ -10,6 +10,15 @@ using UnityEngine.UI;
 /// </summary>
 public class CursedHorrorBootstrap : MonoBehaviour
 {
+    private const string NormalStoryText =
+        "Story:\n\n" +
+        "Oh noes! School is out, but your friend has a problem! He left all his noteboos in school, " +
+        "but doesn't have time to go get them, because if he does he'll be late for eating pracitce. " +
+        "To help him out, you have to go back in the school and find all 7 of his notebooks for him. " +
+        "It won't be easy though! Baldi loves challenging his students with fun trivia problems whenever he can! " +
+        "Each time you find a notebook, you'll have to answer some questions. Answer all three correctly, and you will earn a prize! " +
+        "Find all 7 notebooks, and then exit the school, to win!";
+
     private const string Phase2StoryText =
         "Story:\n\n" +
         "Oh noes! School is out, but <color=#FF0000>BALD.ENTITY has a problem!</color> " +
@@ -37,6 +46,13 @@ public class CursedHorrorBootstrap : MonoBehaviour
     public static bool HorrorActive
     {
         get { return instance != null && instance.horrorActive; }
+    }
+
+    public static string GetStoryTextForCurrentPhase()
+    {
+        return CursedPhaseManager.IsPhase2 && !CursedPhaseManager.IsPhase3 && !CursedPhaseManager.IsPhase4
+            ? Phase2StoryText
+            : NormalStoryText;
     }
 
     public static void ActivateHorror()

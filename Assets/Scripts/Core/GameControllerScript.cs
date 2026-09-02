@@ -28,19 +28,18 @@ public class GameControllerScript : MonoBehaviour
 				}
 				else
 				{
-					UnpauseGame();
+					PauseMenuScript pauseController = pauseMenu.GetComponent<PauseMenuScript>();
+					if (pauseController != null && pauseController.IsCapturingBinding)
+					{
+						// Let the binding screen consume Escape without closing the pause menu.
+					}
+					else if (pauseController == null || !pauseController.HandleBackRequest())
+					{
+						UnpauseGame();
+					}
 				}
 			}
 			
-			if (Input.GetKeyDown(KeyCode.Y) & gamePaused)
-			{
-				ExitGame();
-			}
-			else if (Input.GetKeyDown(KeyCode.N) & gamePaused)
-			{
-				UnpauseGame();
-			}
-
 			if (!gamePaused & Time.timeScale != 1f)
 			{
 				Time.timeScale = 1f;
