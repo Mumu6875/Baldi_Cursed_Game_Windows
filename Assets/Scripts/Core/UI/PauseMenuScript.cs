@@ -450,24 +450,35 @@ public class PauseMenuScript : MonoBehaviour
         root.transform.SetParent(parent, false);
         SetAnchors(root.GetComponent<RectTransform>(), min.x, min.y, max.x, max.y);
 
-        GameObject track = CreateImage("Track", root.transform, Red);
-        SetAnchors(track.GetComponent<RectTransform>(), 0f, 0.38f, 1f, 0.62f);
+        GameObject track = CreateImage("Background", root.transform, Color.red);
+        SetAnchors(track.GetComponent<RectTransform>(), 0f, 0.25f, 1f, 0.75f);
         GameObject fillArea = new GameObject("Fill Area", typeof(RectTransform));
         fillArea.transform.SetParent(root.transform, false);
-        SetAnchors(fillArea.GetComponent<RectTransform>(), 0f, 0.38f, 1f, 0.62f);
-        GameObject fill = CreateImage("Fill", fillArea.transform, Green);
-        Stretch(fill.GetComponent<RectTransform>());
-        GameObject handleArea = new GameObject("Handle Area", typeof(RectTransform));
+        RectTransform fillAreaRect = fillArea.GetComponent<RectTransform>();
+        SetAnchors(fillAreaRect, 0f, 0.25f, 1f, 0.75f);
+        fillAreaRect.anchoredPosition = new Vector2(-5f, 0f);
+        fillAreaRect.sizeDelta = new Vector2(-20f, 0f);
+        GameObject fill = CreateImage("Fill", fillArea.transform, Color.green);
+        RectTransform fillRect = fill.GetComponent<RectTransform>();
+        Stretch(fillRect);
+        fillRect.sizeDelta = new Vector2(10f, 0f);
+        GameObject handleArea = new GameObject("Handle Slide Area", typeof(RectTransform));
         handleArea.transform.SetParent(root.transform, false);
-        Stretch(handleArea.GetComponent<RectTransform>());
-        GameObject handle = CreateImage("Handle", handleArea.transform, Blue);
+        RectTransform handleAreaRect = handleArea.GetComponent<RectTransform>();
+        Stretch(handleAreaRect);
+        handleAreaRect.sizeDelta = new Vector2(-20f, 0f);
+        GameObject handle = CreateImage("Handle", handleArea.transform, Color.white);
         RectTransform handleRect = handle.GetComponent<RectTransform>();
-        handleRect.sizeDelta = new Vector2(28f, 40f);
+        handleRect.sizeDelta = new Vector2(20f, 20f);
+        handleRect.localScale = new Vector3(1.5f, 1.5f, 1f);
+        Image handleImage = handle.GetComponent<Image>();
+        handleImage.sprite = Resources.Load<Sprite>("CursedMod/SensitivityStick");
+        handleImage.preserveAspect = true;
 
         Slider slider = root.GetComponent<Slider>();
-        slider.fillRect = fill.GetComponent<RectTransform>();
+        slider.fillRect = fillRect;
         slider.handleRect = handleRect;
-        slider.targetGraphic = handle.GetComponent<Image>();
+        slider.targetGraphic = handleImage;
         slider.direction = Slider.Direction.LeftToRight;
         return slider;
     }
