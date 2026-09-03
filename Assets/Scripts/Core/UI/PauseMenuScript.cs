@@ -125,7 +125,7 @@ public class PauseMenuScript : MonoBehaviour
         layout.childForceExpandHeight = false;
         ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        storyText = CreateFlowText("Story Text", content, CursedHorrorBootstrap.GetStoryTextForCurrentPhase(), 17f, Ink);
+        storyText = CreateFlowText("Story Text", content, CursedHorrorBootstrap.GetHowToPlayTextForCurrentPhase(), 17f, Ink);
         storyText.richText = true;
         return page;
     }
@@ -201,7 +201,7 @@ public class PauseMenuScript : MonoBehaviour
         float sensitivity = PlayerPrefs.GetFloat("MouseSensitivity", 2f);
         if (sensitivitySlider != null) sensitivitySlider.SetValueWithoutNotify(Mathf.Clamp(sensitivity, 0.1f, 10f));
         if (sensitivityValue != null) sensitivityValue.text = sensitivity.ToString("0.0");
-        if (storyText != null) storyText.text = CursedHorrorBootstrap.GetStoryTextForCurrentPhase();
+        if (storyText != null) storyText.text = CursedHorrorBootstrap.GetHowToPlayTextForCurrentPhase();
 #if UNITY_STANDALONE || UNITY_EDITOR
         inputManager = Singleton<InputManager>.Instance;
         RefreshBindings();

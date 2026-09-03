@@ -10,26 +10,23 @@ using UnityEngine.UI;
 /// </summary>
 public class CursedHorrorBootstrap : MonoBehaviour
 {
-    private const string NormalStoryText =
-        "Story:\n\n" +
-        "Oh noes! School is out, but your friend has a problem! He left all his noteboos in school, " +
-        "but doesn't have time to go get them, because if he does he'll be late for eating pracitce. " +
-        "To help him out, you have to go back in the school and find all 7 of his notebooks for him. " +
-        "It won't be easy though! Baldi loves challenging his students with fun trivia problems whenever he can! " +
-        "Each time you find a notebook, you'll have to answer some questions. Answer all three correctly, and you will earn a prize! " +
-        "Find all 7 notebooks, and then exit the school, to win!";
-
-    private const string Phase2StoryText =
-        "Story:\n\n" +
-        "Oh noes! School is out, but <color=#FF0000>BALD.ENTITY has a problem!</color> " +
+    private const string NormalHowToPlayText =
+        "Oh noes! School is out, but your friend has a problem! " +
         "He left all his noteboos in school, but doesn't have time to go get them, " +
-        "<color=#FF0000>because if he does he'll be late for ekatsim a ma I pracitce.</color> " +
-        "To help him out, you have to go back in the school and find all 7 of his notebooks for him. " +
-        "It won't be easy though! " +
-        "<color=#FF0000>BALD.ENTITY loves challenging his students with fun trivia problems whenever he can!</color> " +
-        "Each time you find a notebook, you'll have to answer some questions. " +
-        "Answer all three correctly, and you will earn a prize! Find all 7 notebooks, " +
-        "<color=#FF0000>and then get stuck in the school!</color>";
+        "because if he does he'll be late for eating pracitce. To help him out, you have to go back in " +
+        "the school and find all his notebooks for him. It won't be easy though! " +
+        "Baldi loves challenging his students with fun trivia problems whenever he can! " +
+        "Each time you find a notebook, you'll have to answer some questions.\n\n" +
+        "To win the game, you must find 7 notebooks, and then exit the school! " +
+        "You have to have fun too, of course!";
+
+    private static readonly string Phase2HowToPlayText = NormalHowToPlayText
+        .Replace("your friend has a problem!", "<color=#FF0000>BALD.ENTITY has a problem!</color>")
+        .Replace("because if he does he'll be late for eating pracitce.",
+            "<color=#FF0000>because if he does he'll be late for ekatsim a ma I pracitce.</color>")
+        .Replace("Baldi loves challenging his students with fun trivia problems whenever he can!",
+            "<color=#FF0000>BALD.ENTITY loves challenging his students with fun trivia problems whenever he can!</color>")
+        .Replace("and then exit the school!", "<color=#FF0000>and then get stuck in the school!</color>");
 
     private static CursedHorrorBootstrap instance;
     private Texture2D cursedBaldiTexture;
@@ -48,11 +45,11 @@ public class CursedHorrorBootstrap : MonoBehaviour
         get { return instance != null && instance.horrorActive; }
     }
 
-    public static string GetStoryTextForCurrentPhase()
+    public static string GetHowToPlayTextForCurrentPhase()
     {
         return CursedPhaseManager.IsPhase2 && !CursedPhaseManager.IsPhase3 && !CursedPhaseManager.IsPhase4
-            ? Phase2StoryText
-            : NormalStoryText;
+            ? Phase2HowToPlayText
+            : NormalHowToPlayText;
     }
 
     public static void ActivateHorror()
@@ -131,7 +128,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
 
         // Repeat after one frame as a safety net for objects instantiated by Start().
         ApplyPhase2MusicSpeed(scene);
-        PatchPhase2StoryText(scene);
+        PatchPhase2HowToPlayText(scene);
 
         bool gameplay = FindFirstObjectByType<PlayerScript>() != null || FindFirstObjectByType<PlayerMovement>() != null;
         if (gameplay)
@@ -162,7 +159,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
         PatchPhase2MathBlackboards();
     }
 
-    private static void PatchPhase2StoryText(Scene scene)
+    private static void PatchPhase2HowToPlayText(Scene scene)
     {
         if (scene.name != "MainMenu" ||
             !CursedPhaseManager.IsPhase2 ||
@@ -213,7 +210,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
 
             TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
             if (storyFont != null) text.font = storyFont;
-            text.text = Phase2StoryText;
+            text.text = GetHowToPlayTextForCurrentPhase();
             text.richText = true;
             text.color = Color.black;
             text.fontSize = 18f;
