@@ -172,32 +172,89 @@ public class CursedHorrorBootstrap : MonoBehaviour
             return;
         }
 
-        int patched = 0;
-        TextMeshProUGUI[] textComponents = Resources.FindObjectsOfTypeAll<TextMeshProUGUI>();
-        for (int i = 0; i < textComponents.Length; i++)
+        TMP_FontAsset storyFont = null;
+        TextMeshProUGUI[] existingTexts = Resources.FindObjectsOfTypeAll<TextMeshProUGUI>();
+        for (int i = 0; i < existingTexts.Length; i++)
         {
-            TextMeshProUGUI textComponent = textComponents[i];
-            if (!textComponent.gameObject.scene.IsValid() || textComponent.gameObject.scene != scene) continue;
-            if (string.IsNullOrEmpty(textComponent.text)) continue;
-            if (!textComponent.text.StartsWith("Story:") ||
-                !textComponent.text.Contains("your friend has a problem!") ||
-                !textComponent.text.Contains("Find all 7 notebooks"))
+            TextMeshProUGUI candidate = existingTexts[i];
+            if (!candidate.gameObject.scene.IsValid() || candidate.gameObject.scene != scene) continue;
+            if (!string.IsNullOrEmpty(candidate.text) && candidate.text.StartsWith("Story:") && candidate.font != null)
             {
-                continue;
+                storyFont = candidate.font;
+                break;
             }
+        }
 
-            textComponent.richText = true;
-            textComponent.text = Phase2StoryText;
+        int patched = 0;
+        RawImage[] images = Resources.FindObjectsOfTypeAll<RawImage>();
+        for (int i = 0; i < images.Length; i++)
+        {
+            RawImage storyImage = images[i];
+            if (!storyImage.gameObject.scene.IsValid() || storyImage.gameObject.scene != scene) continue;
+            if (storyImage.gameObject.name != "StoryImage" || !HasAncestorNamed(storyImage.transform, "Story")) continue;
+            if (storyImage.transform.parent.Find("Phase 2 Story Panel") != null) continue;
+
+            GameObject panel = new GameObject("Phase 2 Story Panel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            panel.transform.SetParent(storyImage.transform.parent, false);
+            RectTransform panelRect = panel.GetComponent<RectTransform>();
+            CopyRect(storyImage.rectTransform, panelRect);
+            panel.transform.SetSiblingIndex(storyImage.transform.GetSiblingIndex() + 1);
+            Image background = panel.GetComponent<Image>();
+            background.color = Color.white;
+            background.raycastTarget = false;
+
+            GameObject textObject = new GameObject("Phase 2 Story Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            textObject.transform.SetParent(panel.transform, false);
+            RectTransform textRect = textObject.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = new Vector2(18f, 54f);
+            textRect.offsetMax = new Vector2(-18f, -14f);
+
+            TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
+            if (storyFont != null) text.font = storyFont;
+            text.text = Phase2StoryText;
+            text.richText = true;
+            text.color = Color.black;
+            text.fontSize = 18f;
+            text.enableAutoSizing = true;
+            text.fontSizeMin = 12f;
+            text.fontSizeMax = 18f;
+            text.alignment = TextAlignmentOptions.TopLeft;
+            text.enableWordWrapping = true;
+            text.raycastTarget = false;
             patched++;
         }
 
         if (patched == 0)
         {
-            Debug.LogWarning("Phase 2 Story TMP text was not found in MainMenu.");
+            Debug.LogWarning("The visible Phase 2 How to Play StoryText was not found in MainMenu.");
             return;
         }
 
-        Debug.Log("Phase 2 cursed Story TMP text applied: " + patched);
+        Debug.Log("Phase 2 cursed Story applied to the visible How to Play panel: " + patched);
+    }
+
+    private static void CopyRect(RectTransform source, RectTransform destination)
+    {
+        destination.anchorMin = source.anchorMin;
+        destination.anchorMax = source.anchorMax;
+        destination.pivot = source.pivot;
+        destination.anchoredPosition = source.anchoredPosition;
+        destination.sizeDelta = source.sizeDelta;
+        destination.localRotation = source.localRotation;
+        destination.localScale = source.localScale;
+    }
+
+    private static bool HasAncestorNamed(Transform child, string ancestorName)
+    {
+        Transform current = child.parent;
+        while (current != null)
+        {
+            if (current.gameObject.name == ancestorName) return true;
+            current = current.parent;
+        }
+        return false;
     }
 
     private void PatchExitSigns()

@@ -6,32 +6,28 @@ using UnityEngine.UI;
 
 public class PauseMenuScript : MonoBehaviour
 {
-    private enum Page { Home, Story, Settings, Controls }
+    private enum Page { Story, Controls }
 
-    private static readonly Color Overlay = new Color(0.015f, 0.02f, 0.03f, 0.92f);
-    private static readonly Color Panel = new Color(0.055f, 0.065f, 0.085f, 0.98f);
-    private static readonly Color Card = new Color(0.095f, 0.11f, 0.14f, 1f);
-    private static readonly Color Muted = new Color(0.68f, 0.72f, 0.78f, 1f);
-    private static readonly Color Yellow = new Color(1f, 0.78f, 0.08f, 1f);
-    private static readonly Color Red = new Color(0.9f, 0.08f, 0.08f, 1f);
+    private static readonly Color Overlay = new Color(0f, 0f, 0f, 0.72f);
+    private static readonly Color Paper = new Color(0.94f, 0.93f, 0.86f, 0.98f);
+    private static readonly Color Ink = new Color(0.08f, 0.08f, 0.20f, 1f);
+    private static readonly Color Purple = new Color(0.40f, 0.38f, 0.72f, 1f);
+    private static readonly Color Blue = new Color(0.08f, 0.30f, 0.85f, 1f);
+    private static readonly Color Green = new Color(0.10f, 0.82f, 0.13f, 1f);
+    private static readonly Color Red = new Color(0.92f, 0.06f, 0.10f, 1f);
 
     public GameControllerScript gc;
 
     private TMP_FontAsset font;
-    private Color accent;
-    private Page currentPage;
-    private GameObject homePage;
     private GameObject storyPage;
-    private GameObject settingsPage;
     private GameObject controlsPage;
     private GameObject bindingOverlay;
-    private TextMeshProUGUI phaseLabel;
-    private TextMeshProUGUI statusLabel;
+    private GameObject baldiYesButton;
+    private GameObject baldiNoButton;
+    private TextMeshProUGUI storyText;
     private TextMeshProUGUI sensitivityValue;
     private Slider sensitivitySlider;
     private InputManager inputManager;
-    private GameObject baldiYesButton;
-    private GameObject baldiNoButton;
     private readonly Dictionary<InputAction, TextMeshProUGUI> bindingLabels = new Dictionary<InputAction, TextMeshProUGUI>();
     private Coroutine bindingRoutine;
 
@@ -40,16 +36,14 @@ public class PauseMenuScript : MonoBehaviour
     private void Awake()
     {
         font = FindLegacyFont();
-        accent = IsExclusivePhase2() ? Red : Yellow;
-        DisableLegacyInterface();
+        CaptureAndDisableLegacyInterface();
         BuildInterface();
     }
 
     private void OnEnable()
     {
-        if (homePage == null) return;
-        accent = IsExclusivePhase2() ? Red : Yellow;
-        ShowPage(Page.Home);
+        if (storyPage == null) return;
+        ShowPage(Page.Story);
         RefreshValues();
     }
 
@@ -58,18 +52,13 @@ public class PauseMenuScript : MonoBehaviour
         CancelBinding();
     }
 
+    // Pausing again must never resume the game. Only Baldi's No head resumes.
     public bool HandleBackRequest()
     {
-        if (IsCapturingBinding) return true;
-        if (currentPage != Page.Home)
-        {
-            ShowPage(Page.Home);
-            return true;
-        }
-        return false;
+        return true;
     }
 
-    private void DisableLegacyInterface()
+    private void CaptureAndDisableLegacyInterface()
     {
         Transform oldButtons = transform.Find("PauseButtons");
         if (oldButtons != null)
@@ -93,68 +82,97 @@ public class PauseMenuScript : MonoBehaviour
 
     private void BuildInterface()
     {
-        GameObject overlay = CreateImage("Modern Pause Overlay", transform, Overlay);
+        GameObject overlay = CreateImage("Simple Pause Overlay", transform, Overlay);
         Stretch(overlay.GetComponent<RectTransform>());
 
-        GameObject frame = CreateImage("Pause Panel", overlay.transform, Panel);
-        SetAnchors(frame.GetComponent<RectTransform>(), 0.055f, 0.055f, 0.945f, 0.945f);
-        AddOutline(frame, new Color(accent.r, accent.g, accent.b, 0.55f), 2f);
+        GameObject paper = CreateImage("Pause Paper", overlay.transform, Paper);
+        SetAnchors(paper.GetComponent<RectTransform>(), 0.12f, 0.055f, 0.88f, 0.945f);
+        AddOutline(paper, new Color(0.08f, 0.08f, 0.12f, 0.8f), 3f);
 
-        GameObject header = CreateImage("Header", frame.transform, new Color(0.025f, 0.03f, 0.045f, 1f));
-        SetAnchors(header.GetComponent<RectTransform>(), 0f, 0.835f, 1f, 1f);
-        CreateText("Title", header.transform, "GAME PAUSED", 30f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, Color.white,
-            new Vector2(0.04f, 0f), new Vector2(0.58f, 1f));
-        phaseLabel = CreateText("Phase", header.transform, "", 17f, FontStyles.Bold, TextAlignmentOptions.MidlineRight, accent,
-            new Vector2(0.58f, 0f), new Vector2(0.96f, 1f));
+        CreateText("Sensitivity Label", paper.transform, "SENSITIVITY", 24f, FontStyles.Bold,
+            TextAlignmentOptions.Center, Ink, new Vector2(0.08f, 0.86f), new Vector2(0.72f, 0.98f));
+        sensitivityValue = CreateText("Sensitivity Value", paper.transform, "", 18f, FontStyles.Bold,
+            TextAlignmentOptions.Center, Blue, new Vector2(0.74f, 0.86f), new Vector2(0.92f, 0.98f));
+        sensitivitySlider = CreateSlider(paper.transform, new Vector2(0.10f, 0.77f), new Vector2(0.90f, 0.86f));
+        sensitivitySlider.minValue = 0.1f;
+        sensitivitySlider.maxValue = 10f;
+        sensitivitySlider.onValueChanged.AddListener(ApplySensitivity);
 
-        GameObject sidebar = CreateImage("Navigation", frame.transform, new Color(0.035f, 0.042f, 0.058f, 1f));
-        SetAnchors(sidebar.GetComponent<RectTransform>(), 0f, 0.19f, 0.255f, 0.835f);
-        AddNavigation(sidebar.transform);
+        CreateButton("Controls Tab", paper.transform, "CONTROLS", new Vector2(0.10f, 0.66f), new Vector2(0.47f, 0.75f),
+            delegate { ShowPage(Page.Controls); }, Purple);
+        CreateButton("Story Tab", paper.transform, "STORY", new Vector2(0.53f, 0.66f), new Vector2(0.90f, 0.75f),
+            delegate { ShowPage(Page.Story); }, Purple);
 
-        RectTransform contentRoot = CreateRect("Content", frame.transform);
-        SetAnchors(contentRoot, 0.275f, 0.21f, 0.975f, 0.805f);
-        homePage = BuildHomePage(contentRoot);
-        storyPage = BuildStoryPage(contentRoot);
-        settingsPage = BuildSettingsPage(contentRoot);
-        controlsPage = BuildControlsPage(contentRoot);
-        BuildBaldiQuitFooter(frame.transform);
+        RectTransform content = CreateRect("Content", paper.transform);
+        SetAnchors(content, 0.08f, 0.24f, 0.92f, 0.63f);
+        storyPage = BuildStoryPage(content);
+        controlsPage = BuildControlsPage(content);
+
+        BuildBaldiChoices(paper.transform);
         BuildBindingOverlay(overlay.transform);
-        ShowPage(Page.Home);
+        ShowPage(Page.Story);
     }
 
-    private void AddNavigation(Transform parent)
+    private GameObject BuildStoryPage(Transform parent)
     {
-        CreateText("Nav Caption", parent, "PAUSE MENU", 13f, FontStyles.Bold, TextAlignmentOptions.Center, Muted,
-            new Vector2(0.08f, 0.87f), new Vector2(0.92f, 0.98f));
-        CreateButton("Resume", parent, "RESUME", new Vector2(0.09f, 0.69f), new Vector2(0.91f, 0.85f), delegate { gc.UnpauseGame(); }, true);
-        CreateButton("Story", parent, "STORY", new Vector2(0.09f, 0.49f), new Vector2(0.91f, 0.65f), delegate { ShowPage(Page.Story); }, false);
-        CreateButton("Settings", parent, "SETTINGS", new Vector2(0.09f, 0.29f), new Vector2(0.91f, 0.45f), delegate { ShowPage(Page.Settings); }, false);
-        CreateButton("Controls", parent, "CONTROLS", new Vector2(0.09f, 0.09f), new Vector2(0.91f, 0.25f), delegate { ShowPage(Page.Controls); }, false);
+        GameObject page = CreatePage("Story Page", parent);
+        RectTransform content = CreateScrollArea("Story Scroll", page.transform);
+        VerticalLayoutGroup layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(16, 16, 12, 16);
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+        ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        storyText = CreateFlowText("Story Text", content, CursedHorrorBootstrap.GetStoryTextForCurrentPhase(), 17f, Ink);
+        storyText.richText = true;
+        return page;
     }
 
-    private void BuildBaldiQuitFooter(Transform parent)
+    private GameObject BuildControlsPage(Transform parent)
     {
-        GameObject footer = CreateImage("Baldi Quit Footer", parent, new Color(0.025f, 0.03f, 0.045f, 1f));
-        SetAnchors(footer.GetComponent<RectTransform>(), 0f, 0f, 1f, 0.18f);
-        CreateText("Quit Prompt", footer.transform, "QUIT TO MAIN MENU?", 16f, FontStyles.Bold,
-            TextAlignmentOptions.Center, Color.white, new Vector2(0.03f, 0.08f), new Vector2(0.43f, 0.92f));
+        GameObject page = CreatePage("Controls Page", parent);
+        RectTransform content = CreateScrollArea("Controls Scroll", page.transform);
+        VerticalLayoutGroup layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(10, 10, 9, 10);
+        layout.spacing = 6f;
+        layout.childControlHeight = false;
+        layout.childControlWidth = true;
+        layout.childForceExpandWidth = true;
+        ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
+#if UNITY_STANDALONE || UNITY_EDITOR
+        InputAction[] actions =
+        {
+            InputAction.MoveForward, InputAction.MoveBackward, InputAction.MoveLeft, InputAction.MoveRight,
+            InputAction.Interact, InputAction.UseItem, InputAction.Slot0, InputAction.Slot1, InputAction.Slot2,
+            InputAction.Run, InputAction.LookBehind, InputAction.PauseOrCancel
+        };
+        for (int i = 0; i < actions.Length; i++) AddBindingRow(content, actions[i]);
+#else
+        CreateFlowText("Touch Guide", content,
+            "MOVE - Left joystick\nLOOK - Drag the screen\nINTERACT - Tap the screen\nRUN - Hold the run button\nLOOK BEHIND - Hold the eye button\nITEMS - Select a slot and tap the item button",
+            17f, Ink);
+#endif
+        return page;
+    }
+
+    private void BuildBaldiChoices(Transform parent)
+    {
         if (baldiYesButton == null || baldiNoButton == null)
         {
-            Debug.LogWarning("The original Baldi Yes/No pause buttons could not be found.");
-            CreateButton("Fallback Yes", footer.transform, "YES", new Vector2(0.48f, 0.20f), new Vector2(0.68f, 0.80f),
-                delegate { gc.ExitGame(); }, false);
-            CreateButton("Fallback No", footer.transform, "NO", new Vector2(0.73f, 0.20f), new Vector2(0.93f, 0.80f),
-                delegate { gc.UnpauseGame(); }, false);
+            Debug.LogError("The original Baldi Yes/No pause heads could not be found.");
             return;
         }
 
-        PlaceBaldiButton(baldiYesButton, footer.transform, new Vector2(0.58f, 0.46f));
-        PlaceBaldiButton(baldiNoButton, footer.transform, new Vector2(0.82f, 0.46f));
-        CreateText("Yes Label", footer.transform, "YES", 12f, FontStyles.Bold, TextAlignmentOptions.Center,
-            accent, new Vector2(0.49f, 0.70f), new Vector2(0.67f, 0.98f));
-        CreateText("No Label", footer.transform, "NO", 12f, FontStyles.Bold, TextAlignmentOptions.Center,
-            Muted, new Vector2(0.73f, 0.70f), new Vector2(0.91f, 0.98f));
+        PlaceBaldiButton(baldiYesButton, parent, new Vector2(0.35f, 0.115f));
+        PlaceBaldiButton(baldiNoButton, parent, new Vector2(0.65f, 0.115f));
+        CreateText("Yes Label", parent, "YES", 14f, FontStyles.Bold, TextAlignmentOptions.Center,
+            Red, new Vector2(0.24f, 0.185f), new Vector2(0.46f, 0.235f));
+        CreateText("No Label", parent, "NO", 14f, FontStyles.Bold, TextAlignmentOptions.Center,
+            Green, new Vector2(0.54f, 0.185f), new Vector2(0.76f, 0.235f));
     }
 
     private static void PlaceBaldiButton(GameObject button, Transform parent, Vector2 anchor)
@@ -166,157 +184,24 @@ public class PauseMenuScript : MonoBehaviour
         rect.anchorMax = anchor;
         rect.pivot = new Vector2(0.5f, 0.5f);
         rect.anchoredPosition = Vector2.zero;
-        rect.sizeDelta = new Vector2(64f, 64f);
+        rect.sizeDelta = new Vector2(94f, 94f);
         Image image = button.GetComponent<Image>();
         if (image != null) image.preserveAspect = true;
     }
 
-    private GameObject BuildHomePage(Transform parent)
-    {
-        GameObject page = CreatePage("Home Page", parent);
-        CreateText("Heading", page.transform, "TAKE A BREATH", 27f, FontStyles.Bold, TextAlignmentOptions.TopLeft, Color.white,
-            new Vector2(0f, 0.78f), new Vector2(1f, 1f));
-        CreateText("Subtitle", page.transform, "The school is frozen while this menu is open.", 16f, FontStyles.Normal,
-            TextAlignmentOptions.TopLeft, Muted, new Vector2(0f, 0.65f), new Vector2(1f, 0.83f));
-
-        GameObject card = CreateImage("Run Status", page.transform, Card);
-        SetAnchors(card.GetComponent<RectTransform>(), 0f, 0.25f, 1f, 0.62f);
-        AddOutline(card, new Color(1f, 1f, 1f, 0.08f), 1f);
-        CreateText("Status Caption", card.transform, "CURRENT RUN", 13f, FontStyles.Bold, TextAlignmentOptions.TopLeft, accent,
-            new Vector2(0.05f, 0.63f), new Vector2(0.95f, 0.92f));
-        statusLabel = CreateText("Status", card.transform, "", 21f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, Color.white,
-            new Vector2(0.05f, 0.08f), new Vector2(0.95f, 0.68f));
-        CreateText("Hint", page.transform, "Press ESC again to resume", 14f, FontStyles.Normal, TextAlignmentOptions.BottomRight, Muted,
-            new Vector2(0f, 0f), new Vector2(1f, 0.16f));
-        return page;
-    }
-
-    private GameObject BuildStoryPage(Transform parent)
-    {
-        GameObject page = CreatePage("Story Page", parent);
-        AddPageHeader(page.transform, "STORY", "Read the current phase objective.");
-        RectTransform content = CreateScrollArea("Story Scroll", page.transform, new Vector2(0f, 0f), new Vector2(1f, 0.76f));
-        VerticalLayoutGroup layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(18, 18, 14, 18);
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
-        layout.childForceExpandWidth = true;
-        layout.childForceExpandHeight = false;
-        ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        TextMeshProUGUI story = CreateFlowText("Story Text", content, CursedHorrorBootstrap.GetStoryTextForCurrentPhase(), 18f, Color.white);
-        story.richText = true;
-        return page;
-    }
-
-    private GameObject BuildSettingsPage(Transform parent)
-    {
-        GameObject page = CreatePage("Settings Page", parent);
-        AddPageHeader(page.transform, "SETTINGS", "Changes are applied and saved immediately.");
-        GameObject card = CreateImage("Sensitivity Card", page.transform, Card);
-        SetAnchors(card.GetComponent<RectTransform>(), 0f, 0.34f, 1f, 0.72f);
-        CreateText("Sensitivity Label", card.transform, "LOOK SENSITIVITY", 17f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft,
-            Color.white, new Vector2(0.05f, 0.62f), new Vector2(0.72f, 0.93f));
-        sensitivityValue = CreateText("Sensitivity Value", card.transform, "", 18f, FontStyles.Bold, TextAlignmentOptions.MidlineRight,
-            accent, new Vector2(0.72f, 0.62f), new Vector2(0.95f, 0.93f));
-        sensitivitySlider = CreateSlider(card.transform, new Vector2(0.05f, 0.30f), new Vector2(0.95f, 0.54f));
-        sensitivitySlider.minValue = 0.1f;
-        sensitivitySlider.maxValue = 10f;
-        sensitivitySlider.onValueChanged.AddListener(ApplySensitivity);
-        CreateButton("Reset Sensitivity", card.transform, "RESET TO 2.0", new Vector2(0.05f, 0.04f), new Vector2(0.42f, 0.25f),
-            delegate { sensitivitySlider.value = 2f; }, false);
-        return page;
-    }
-
-    private GameObject BuildControlsPage(Transform parent)
-    {
-        GameObject page = CreatePage("Controls Page", parent);
-        AddPageHeader(page.transform, "CONTROLS", "Select a binding, then press a key or mouse button.");
-#if UNITY_STANDALONE || UNITY_EDITOR
-        RectTransform content = CreateScrollArea("Controls Scroll", page.transform, new Vector2(0f, 0.12f), new Vector2(1f, 0.75f));
-        VerticalLayoutGroup layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(12, 12, 10, 10);
-        layout.spacing = 7f;
-        layout.childControlHeight = false;
-        layout.childControlWidth = true;
-        layout.childForceExpandWidth = true;
-        ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        InputAction[] actions = { InputAction.MoveForward, InputAction.MoveBackward, InputAction.MoveLeft, InputAction.MoveRight,
-            InputAction.Interact, InputAction.UseItem, InputAction.Slot0, InputAction.Slot1, InputAction.Slot2,
-            InputAction.Run, InputAction.LookBehind, InputAction.PauseOrCancel };
-        for (int i = 0; i < actions.Length; i++) AddBindingRow(content, actions[i]);
-        CreateButton("Reset Controls", page.transform, "RESET DEFAULTS", new Vector2(0f, 0f), new Vector2(0.38f, 0.09f), ResetControls, false);
-#else
-        RectTransform content = CreateScrollArea("Touch Guide Scroll", page.transform, new Vector2(0f, 0f), new Vector2(1f, 0.75f));
-        VerticalLayoutGroup layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(18, 18, 14, 18);
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
-        layout.childForceExpandWidth = true;
-        layout.childForceExpandHeight = false;
-        ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        CreateFlowText("Touch Guide", content,
-            "MOVE\nUse the left virtual joystick.\n\nLOOK AND INTERACT\nDrag the right side to look. Tap an object, notebook or door to interact.\n\nRUN\nHold the run button while moving.\n\nITEMS\nTap a slot to select it, then use the round item button.", 17f, Color.white);
-#endif
-        return page;
-    }
-
-    private void AddBindingRow(Transform parent, InputAction action)
-    {
-        GameObject row = CreateImage(action + " Row", parent, Card);
-        LayoutElement rowLayout = row.AddComponent<LayoutElement>();
-        rowLayout.preferredHeight = 48f;
-        HorizontalLayoutGroup group = row.AddComponent<HorizontalLayoutGroup>();
-        group.padding = new RectOffset(12, 10, 6, 6);
-        group.spacing = 10f;
-        group.childAlignment = TextAnchor.MiddleLeft;
-        group.childControlHeight = true;
-        group.childControlWidth = false;
-
-        TextMeshProUGUI name = CreateLayoutText("Action", row.transform, ActionName(action), 15f, Color.white, 125f);
-        name.fontStyle = FontStyles.Bold;
-        Button bindingButton = CreateLayoutButton("Binding", row.transform, "", 165f);
-        TextMeshProUGUI label = bindingButton.GetComponentInChildren<TextMeshProUGUI>();
-        bindingLabels[action] = label;
-        InputAction capturedAction = action;
-        bindingButton.onClick.AddListener(delegate { BeginBinding(capturedAction); });
-    }
-
-    private void BuildBindingOverlay(Transform parent)
-    {
-        bindingOverlay = CreateImage("Binding Capture", parent, new Color(0f, 0f, 0f, 0.94f));
-        Stretch(bindingOverlay.GetComponent<RectTransform>());
-        CreateText("Capture Title", bindingOverlay.transform, "PRESS A KEY", 30f, FontStyles.Bold, TextAlignmentOptions.Center,
-            Color.white, new Vector2(0.1f, 0.50f), new Vector2(0.9f, 0.68f));
-        CreateText("Capture Hint", bindingOverlay.transform, "ESC cancels  |  DELETE clears", 15f, FontStyles.Normal,
-            TextAlignmentOptions.Center, Muted, new Vector2(0.1f, 0.38f), new Vector2(0.9f, 0.52f));
-        bindingOverlay.SetActive(false);
-    }
-
     private void ShowPage(Page page)
     {
-        currentPage = page;
-        homePage.SetActive(page == Page.Home);
         storyPage.SetActive(page == Page.Story);
-        settingsPage.SetActive(page == Page.Settings);
         controlsPage.SetActive(page == Page.Controls);
         RefreshValues();
     }
 
     private void RefreshValues()
     {
-        string phase = IsExclusivePhase2() ? "PHASE 2" : (CursedPhaseManager.IsPhase3 ? "PHASE 3" : (CursedPhaseManager.IsPhase4 ? "PHASE 4" : "PHASE 1"));
-        if (phaseLabel != null)
-        {
-            phaseLabel.text = phase;
-            phaseLabel.color = accent;
-        }
-        if (statusLabel != null) statusLabel.text = phase + "\n" + (gc != null ? gc.notebooks : 0) + " / 7 NOTEBOOKS";
         float sensitivity = PlayerPrefs.GetFloat("MouseSensitivity", 2f);
         if (sensitivitySlider != null) sensitivitySlider.SetValueWithoutNotify(Mathf.Clamp(sensitivity, 0.1f, 10f));
         if (sensitivityValue != null) sensitivityValue.text = sensitivity.ToString("0.0");
+        if (storyText != null) storyText.text = CursedHorrorBootstrap.GetStoryTextForCurrentPhase();
 #if UNITY_STANDALONE || UNITY_EDITOR
         inputManager = Singleton<InputManager>.Instance;
         RefreshBindings();
@@ -330,6 +215,27 @@ public class PauseMenuScript : MonoBehaviour
         PlayerPrefs.Save();
         if (gc != null && gc.player != null) gc.player.mouseSensitivity = value;
         if (sensitivityValue != null) sensitivityValue.text = value.ToString("0.0");
+    }
+
+    private void AddBindingRow(Transform parent, InputAction action)
+    {
+        GameObject row = CreateImage(action + " Row", parent, new Color(0.82f, 0.81f, 0.92f, 0.8f));
+        LayoutElement rowLayout = row.AddComponent<LayoutElement>();
+        rowLayout.preferredHeight = 44f;
+        HorizontalLayoutGroup group = row.AddComponent<HorizontalLayoutGroup>();
+        group.padding = new RectOffset(10, 8, 5, 5);
+        group.spacing = 8f;
+        group.childAlignment = TextAnchor.MiddleLeft;
+        group.childControlHeight = true;
+        group.childControlWidth = false;
+
+        TextMeshProUGUI actionLabel = CreateLayoutText("Action", row.transform, ActionName(action), 14f, Ink, 145f);
+        actionLabel.fontStyle = FontStyles.Bold;
+        Button bindingButton = CreateLayoutButton("Binding", row.transform, "", 175f);
+        TextMeshProUGUI bindingLabel = bindingButton.GetComponentInChildren<TextMeshProUGUI>();
+        bindingLabels[action] = bindingLabel;
+        InputAction selectedAction = action;
+        bindingButton.onClick.AddListener(delegate { BeginBinding(selectedAction); });
     }
 
     private void BeginBinding(InputAction action)
@@ -353,28 +259,28 @@ public class PauseMenuScript : MonoBehaviour
                 inputManager.Save();
                 break;
             }
+
             KeyCode key;
             if (TryReadKey(out key))
             {
-                InputBinding binding = inputManager.Mappings[action];
-                binding.primaryKey = key;
-                binding.secondaryKey = KeyCode.None;
-                inputManager.KeyboardMapping[action] = binding;
+                inputManager.KeyboardMapping[action] = new InputBinding(key, KeyCode.None);
                 inputManager.Save();
                 break;
             }
             yield return null;
         }
+
         bindingRoutine = null;
         bindingOverlay.SetActive(false);
         RefreshBindings();
     }
 
-    private bool TryReadKey(out KeyCode key)
+    private static bool TryReadKey(out KeyCode key)
     {
         foreach (KeyCode candidate in System.Enum.GetValues(typeof(KeyCode)))
         {
-            if (candidate == KeyCode.None || candidate == KeyCode.Escape || candidate == KeyCode.Delete || candidate == KeyCode.Backspace) continue;
+            if (candidate == KeyCode.None || candidate == KeyCode.Escape ||
+                candidate == KeyCode.Delete || candidate == KeyCode.Backspace) continue;
             if (Input.GetKeyDown(candidate))
             {
                 key = candidate;
@@ -392,13 +298,6 @@ public class PauseMenuScript : MonoBehaviour
         if (bindingOverlay != null) bindingOverlay.SetActive(false);
     }
 
-    private void ResetControls()
-    {
-        inputManager = Singleton<InputManager>.Instance;
-        inputManager.SetDefaults();
-        RefreshBindings();
-    }
-
     private void RefreshBindings()
     {
         if (inputManager == null) return;
@@ -406,8 +305,21 @@ public class PauseMenuScript : MonoBehaviour
         {
             InputBinding binding = inputManager.Mappings[pair.Key];
             KeyCode visibleKey = binding.primaryKey != KeyCode.None ? binding.primaryKey : binding.secondaryKey;
-            pair.Value.text = visibleKey == KeyCode.None ? "UNBOUND" : inputManager.KeyCodeToDisplayString(visibleKey).ToUpperInvariant();
+            pair.Value.text = visibleKey == KeyCode.None
+                ? "UNBOUND"
+                : inputManager.KeyCodeToDisplayString(visibleKey).ToUpperInvariant();
         }
+    }
+
+    private void BuildBindingOverlay(Transform parent)
+    {
+        bindingOverlay = CreateImage("Binding Capture", parent, new Color(0f, 0f, 0f, 0.94f));
+        Stretch(bindingOverlay.GetComponent<RectTransform>());
+        CreateText("Capture Title", bindingOverlay.transform, "PRESS A KEY", 30f, FontStyles.Bold,
+            TextAlignmentOptions.Center, Color.white, new Vector2(0.10f, 0.48f), new Vector2(0.90f, 0.68f));
+        CreateText("Capture Hint", bindingOverlay.transform, "ESC CANCELS  -  DELETE CLEARS", 14f, FontStyles.Normal,
+            TextAlignmentOptions.Center, Color.white, new Vector2(0.10f, 0.36f), new Vector2(0.90f, 0.50f));
+        bindingOverlay.SetActive(false);
     }
 
     private static string ActionName(InputAction action)
@@ -428,14 +340,6 @@ public class PauseMenuScript : MonoBehaviour
             case InputAction.PauseOrCancel: return "PAUSE";
             default: return action.ToString().ToUpperInvariant();
         }
-    }
-
-    private void AddPageHeader(Transform parent, string title, string subtitle)
-    {
-        CreateText(title, parent, title, 25f, FontStyles.Bold, TextAlignmentOptions.TopLeft, Color.white,
-            new Vector2(0f, 0.82f), new Vector2(1f, 1f));
-        CreateText("Subtitle", parent, subtitle, 14f, FontStyles.Normal, TextAlignmentOptions.TopLeft, Muted,
-            new Vector2(0f, 0.73f), new Vector2(1f, 0.86f));
     }
 
     private GameObject CreatePage(string name, Transform parent)
@@ -504,35 +408,37 @@ public class PauseMenuScript : MonoBehaviour
         return text;
     }
 
-    private Button CreateButton(string name, Transform parent, string label, Vector2 min, Vector2 max, UnityEngine.Events.UnityAction click, bool primary)
+    private Button CreateButton(string name, Transform parent, string label, Vector2 min, Vector2 max,
+        UnityEngine.Events.UnityAction click, Color color)
     {
-        GameObject obj = CreateImage(name, parent, primary ? accent : Card);
+        GameObject obj = CreateImage(name, parent, color);
         SetAnchors(obj.GetComponent<RectTransform>(), min.x, min.y, max.x, max.y);
         Button button = obj.AddComponent<Button>();
-        ConfigureButton(button, primary);
+        ConfigureButton(button);
         button.onClick.AddListener(click);
-        CreateText("Label", obj.transform, label, 16f, FontStyles.Bold, TextAlignmentOptions.Center, primary ? Color.black : Color.white,
-            Vector2.zero, Vector2.one);
+        CreateText("Label", obj.transform, label, 16f, FontStyles.Bold, TextAlignmentOptions.Center,
+            Color.white, Vector2.zero, Vector2.one);
         return button;
     }
 
     private Button CreateLayoutButton(string name, Transform parent, string label, float width)
     {
-        GameObject obj = CreateImage(name, parent, new Color(0.14f, 0.16f, 0.2f, 1f));
+        GameObject obj = CreateImage(name, parent, Purple);
         LayoutElement layout = obj.AddComponent<LayoutElement>();
         layout.preferredWidth = width;
         layout.minWidth = width;
         Button button = obj.AddComponent<Button>();
-        ConfigureButton(button, false);
-        CreateText("Label", obj.transform, label, 13f, FontStyles.Bold, TextAlignmentOptions.Center, accent, Vector2.zero, Vector2.one);
+        ConfigureButton(button);
+        CreateText("Label", obj.transform, label, 13f, FontStyles.Bold, TextAlignmentOptions.Center,
+            Color.white, Vector2.zero, Vector2.one);
         return button;
     }
 
-    private void ConfigureButton(Button button, bool primary)
+    private static void ConfigureButton(Button button)
     {
         ColorBlock colors = button.colors;
         colors.normalColor = Color.white;
-        colors.highlightedColor = primary ? new Color(1f, 0.92f, 0.65f, 1f) : new Color(1.25f, 1.25f, 1.25f, 1f);
+        colors.highlightedColor = new Color(1f, 1f, 1f, 0.82f);
         colors.pressedColor = new Color(0.72f, 0.72f, 0.72f, 1f);
         colors.selectedColor = colors.highlightedColor;
         button.colors = colors;
@@ -543,19 +449,21 @@ public class PauseMenuScript : MonoBehaviour
         GameObject root = new GameObject("Sensitivity Slider", typeof(RectTransform), typeof(Slider));
         root.transform.SetParent(parent, false);
         SetAnchors(root.GetComponent<RectTransform>(), min.x, min.y, max.x, max.y);
-        GameObject background = CreateImage("Track", root.transform, new Color(0.025f, 0.03f, 0.04f, 1f));
-        SetAnchors(background.GetComponent<RectTransform>(), 0f, 0.38f, 1f, 0.62f);
+
+        GameObject track = CreateImage("Track", root.transform, Red);
+        SetAnchors(track.GetComponent<RectTransform>(), 0f, 0.38f, 1f, 0.62f);
         GameObject fillArea = new GameObject("Fill Area", typeof(RectTransform));
         fillArea.transform.SetParent(root.transform, false);
         SetAnchors(fillArea.GetComponent<RectTransform>(), 0f, 0.38f, 1f, 0.62f);
-        GameObject fill = CreateImage("Fill", fillArea.transform, accent);
+        GameObject fill = CreateImage("Fill", fillArea.transform, Green);
         Stretch(fill.GetComponent<RectTransform>());
         GameObject handleArea = new GameObject("Handle Area", typeof(RectTransform));
         handleArea.transform.SetParent(root.transform, false);
         Stretch(handleArea.GetComponent<RectTransform>());
-        GameObject handle = CreateImage("Handle", handleArea.transform, Color.white);
+        GameObject handle = CreateImage("Handle", handleArea.transform, Blue);
         RectTransform handleRect = handle.GetComponent<RectTransform>();
-        handleRect.sizeDelta = new Vector2(18f, 26f);
+        handleRect.sizeDelta = new Vector2(28f, 40f);
+
         Slider slider = root.GetComponent<Slider>();
         slider.fillRect = fill.GetComponent<RectTransform>();
         slider.handleRect = handleRect;
@@ -564,10 +472,10 @@ public class PauseMenuScript : MonoBehaviour
         return slider;
     }
 
-    private RectTransform CreateScrollArea(string name, Transform parent, Vector2 min, Vector2 max)
+    private RectTransform CreateScrollArea(string name, Transform parent)
     {
-        GameObject root = CreateImage(name, parent, Card);
-        SetAnchors(root.GetComponent<RectTransform>(), min.x, min.y, max.x, max.y);
+        GameObject root = CreateImage(name, parent, new Color(0.78f, 0.77f, 0.90f, 0.48f));
+        Stretch(root.GetComponent<RectTransform>());
         ScrollRect scroll = root.AddComponent<ScrollRect>();
         scroll.horizontal = false;
         scroll.scrollSensitivity = 24f;
@@ -619,12 +527,10 @@ public class PauseMenuScript : MonoBehaviour
     private TMP_FontAsset FindLegacyFont()
     {
         TextMeshProUGUI[] labels = GetComponentsInChildren<TextMeshProUGUI>(true);
-        for (int i = 0; i < labels.Length; i++) if (labels[i].font != null) return labels[i].font;
+        for (int i = 0; i < labels.Length; i++)
+        {
+            if (labels[i].font != null) return labels[i].font;
+        }
         return TMP_Settings.defaultFontAsset;
-    }
-
-    private static bool IsExclusivePhase2()
-    {
-        return CursedPhaseManager.IsPhase2 && !CursedPhaseManager.IsPhase3 && !CursedPhaseManager.IsPhase4;
     }
 }
