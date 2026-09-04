@@ -372,7 +372,7 @@ public class PauseMenuScript : MonoBehaviour
         text.alignment = alignment;
         text.color = color;
         text.raycastTarget = false;
-        text.enableWordWrapping = true;
+        text.textWrappingMode = TextWrappingModes.Normal;
         return text;
     }
 
@@ -387,7 +387,7 @@ public class PauseMenuScript : MonoBehaviour
         text.color = color;
         text.alignment = TextAlignmentOptions.TopLeft;
         text.raycastTarget = false;
-        text.enableWordWrapping = true;
+        text.textWrappingMode = TextWrappingModes.Normal;
         return text;
     }
 

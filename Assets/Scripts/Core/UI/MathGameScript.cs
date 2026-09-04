@@ -288,7 +288,7 @@ public class MathGameScript : MonoBehaviour
         message.enableAutoSizing = true;
         message.fontSizeMin = 12f;
         message.fontSizeMax = 22f;
-        message.enableWordWrapping = true;
+        message.textWrappingMode = TextWrappingModes.Normal;
         message.alignment = TextAlignmentOptions.Center;
         message.color = Color.red;
         message.raycastTarget = false;

@@ -218,7 +218,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
             text.fontSizeMin = 12f;
             text.fontSizeMax = 18f;
             text.alignment = TextAlignmentOptions.TopLeft;
-            text.enableWordWrapping = true;
+            text.textWrappingMode = TextWrappingModes.Normal;
             text.raycastTarget = false;
             patched++;
         }
