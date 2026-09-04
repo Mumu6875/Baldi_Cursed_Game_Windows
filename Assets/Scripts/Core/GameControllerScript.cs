@@ -297,7 +297,7 @@ public class GameControllerScript : MonoBehaviour
 		{
 			if (item[itemSelected] == 1)
 			{
-				player.stamina = player.maxStamina * 2f;
+				player.ConsumeZestyBar();
 				ResetItem();
 				//player.ResetGuilt("food", 3f);
 			}
