@@ -104,7 +104,7 @@ public class PauseMenuScript : MonoBehaviour
             delegate { ShowPage(Page.Story); }, Purple);
 
         RectTransform content = CreateRect("Content", paper.transform);
-        SetAnchors(content, 0.08f, 0.24f, 0.92f, 0.63f);
+        SetAnchors(content, 0.08f, 0.30f, 0.92f, 0.63f);
         storyPage = BuildStoryPage(content);
         controlsPage = BuildControlsPage(content);
 
@@ -169,6 +169,9 @@ public class PauseMenuScript : MonoBehaviour
 
         PlaceBaldiButton(baldiYesButton, parent, new Vector2(0.35f, 0.115f));
         PlaceBaldiButton(baldiNoButton, parent, new Vector2(0.65f, 0.115f));
+        CreateText("Quit Confirmation Label", parent, "ARE YOU SURE YOU WANT TO QUIT?", 18f,
+            FontStyles.Bold, TextAlignmentOptions.Center, Ink,
+            new Vector2(0.12f, 0.235f), new Vector2(0.88f, 0.295f));
         CreateText("Yes Label", parent, "YES", 14f, FontStyles.Bold, TextAlignmentOptions.Center,
             Red, new Vector2(0.24f, 0.185f), new Vector2(0.46f, 0.235f));
         CreateText("No Label", parent, "NO", 14f, FontStyles.Bold, TextAlignmentOptions.Center,
