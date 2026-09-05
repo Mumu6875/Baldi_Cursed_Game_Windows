@@ -756,10 +756,14 @@ public static class CursedThinkPadInstaller
 
 public static class CursedBaldiSizing
 {
-    // The School scene starts gameplay Baldi on Baldi_Slap0024. Its opaque
-    // bounds are 71x251 pixels at 100 PPU and its combined world scale is 3.2.
-    public const float CanonicalVisibleWorldWidth = 71f / 100f * 3.2f;
-    public const float CanonicalVisibleWorldHeight = 251f / 100f * 3.2f;
+    // Use the neutral Slap0000 body, excluding the ruler and extended arms.
+    // Torso alpha spans: normal x=20..62 at y=120; cursed x=386..638 at y=650.
+    public const float ReferenceBodyWidthPixels = 43f;
+    public const float ReferenceHeightPixels = 232f;
+    public const float CursedBodyWidthUnits = 253f / 256f;
+    public const float CanonicalVisibleWorldWidth =
+        ReferenceBodyWidthPixels / 100f * 3.2f / CursedBodyWidthUnits * CursedVisibleWidthUnits;
+    public const float CanonicalVisibleWorldHeight = ReferenceHeightPixels / 100f * 3.2f;
 
     // CursedBaldi.png has a 434x1460 opaque region at 256 PPU, with 28
     // transparent pixels below its feet.
@@ -807,9 +811,11 @@ public class CursedBaldiVisual : MonoBehaviour
         CursedBaldiSizing.GetSlapOpaqueMetrics(original, out visibleWidthPixels, out visibleHeightPixels, out bottomPaddingPixels);
 
         float originalPixelsPerUnit = original != null ? original.pixelsPerUnit : 100f;
-        float originalVisibleWorldWidth = visibleWidthPixels / originalPixelsPerUnit * originalScaleX;
-        float originalVisibleWorldHeight = visibleHeightPixels / originalPixelsPerUnit * originalScaleY;
-        float desiredWorldScaleX = originalVisibleWorldWidth / CursedBaldiSizing.CursedVisibleWidthUnits;
+        // Animation frames change the ruler/arm bounds. Size the cursed body
+        // against a fixed neutral pose instead of whichever frame is playing.
+        float originalVisibleWorldWidth = CursedBaldiSizing.ReferenceBodyWidthPixels / originalPixelsPerUnit * originalScaleX;
+        float originalVisibleWorldHeight = CursedBaldiSizing.ReferenceHeightPixels / originalPixelsPerUnit * originalScaleY;
+        float desiredWorldScaleX = originalVisibleWorldWidth / CursedBaldiSizing.CursedBodyWidthUnits;
         float desiredWorldScaleY = originalVisibleWorldHeight / CursedBaldiSizing.CursedVisibleHeightUnits;
 
         float originalFootWorldY = transform.position.y;
