@@ -773,6 +773,23 @@ public static class CursedBaldiSizing
     public const float CanonicalWorldScaleX = CanonicalVisibleWorldWidth / CursedVisibleWidthUnits;
     public const float CanonicalWorldScaleY = CanonicalVisibleWorldHeight / CursedVisibleHeightUnits;
 
+    // Use the imported sprite dimensions: Unity can resize NPOT source images
+    // or downsample them for a platform. Source-pixel constants alone are unsafe.
+    public static float BodyWidthUnits(Sprite sprite)
+    {
+        return sprite.rect.width / sprite.pixelsPerUnit * (253f / 1024f);
+    }
+
+    public static float VisibleHeightUnits(Sprite sprite)
+    {
+        return sprite.rect.height / sprite.pixelsPerUnit * (1460f / 1536f);
+    }
+
+    public static float BottomPaddingUnits(Sprite sprite)
+    {
+        return sprite.rect.height / sprite.pixelsPerUnit * (28f / 1536f);
+    }
+
     public static void GetSlapOpaqueMetrics(Sprite original, out float widthPixels, out float heightPixels, out float bottomPaddingPixels)
     {
         widthPixels = 71f;
@@ -815,8 +832,12 @@ public class CursedBaldiVisual : MonoBehaviour
         // against a fixed neutral pose instead of whichever frame is playing.
         float originalVisibleWorldWidth = CursedBaldiSizing.ReferenceBodyWidthPixels / originalPixelsPerUnit * originalScaleX;
         float originalVisibleWorldHeight = CursedBaldiSizing.ReferenceHeightPixels / originalPixelsPerUnit * originalScaleY;
-        float desiredWorldScaleX = originalVisibleWorldWidth / CursedBaldiSizing.CursedBodyWidthUnits;
-        float desiredWorldScaleY = originalVisibleWorldHeight / CursedBaldiSizing.CursedVisibleHeightUnits;
+        float desiredWorldScaleX = originalVisibleWorldWidth / CursedBaldiSizing.BodyWidthUnits(cursedSprite);
+        float desiredWorldScaleY = originalVisibleWorldHeight / CursedBaldiSizing.VisibleHeightUnits(cursedSprite);
+
+        Debug.Log("Cursed Baldi sizing: imported sprite=" + cursedSprite.rect.width + "x" +
+            cursedSprite.rect.height + ", target body width=" + originalVisibleWorldWidth +
+            ", target height=" + originalVisibleWorldHeight);
 
         float originalFootWorldY = transform.position.y;
         if (original != null)
@@ -834,7 +855,7 @@ public class CursedBaldiVisual : MonoBehaviour
 
         // Keep the first opaque foot pixel at exactly the same world height as
         // the normal sprite while changing width and height independently.
-        float cursedFootOffset = (cursedSprite.bounds.min.y + CursedBaldiSizing.CursedBottomPaddingUnits) * desiredWorldScaleY;
+        float cursedFootOffset = (cursedSprite.bounds.min.y + CursedBaldiSizing.BottomPaddingUnits(cursedSprite)) * desiredWorldScaleY;
         Vector3 desiredWorldPosition = transform.position;
         desiredWorldPosition.y = originalFootWorldY - cursedFootOffset;
         if (transform.parent != null)

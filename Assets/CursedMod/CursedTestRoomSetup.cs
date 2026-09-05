@@ -127,17 +127,15 @@ public sealed class CursedTestRoomSetup : MonoBehaviour
         renderer.sprite = sprite;
         renderer.color = Color.white;
 
-        // Use the same independent X/Y targets as the normal-game replacement.
-        // This matches Baldi_Slap0024's exact opaque 71x251 pixel bounds instead
-        // of merely approximating its height from the texture canvas.
-        visual.transform.localScale = new Vector3(
-            CursedBaldiSizing.CanonicalWorldScaleX,
-            CursedBaldiSizing.CanonicalWorldScaleY,
-            1f);
+        // Match the gameplay reference using the actual imported sprite size.
+        float scaleX = CursedBaldiSizing.ReferenceBodyWidthPixels / 100f * 3.2f /
+            CursedBaldiSizing.BodyWidthUnits(sprite);
+        float scaleY = CursedBaldiSizing.CanonicalVisibleWorldHeight /
+            CursedBaldiSizing.VisibleHeightUnits(sprite);
+        visual.transform.localScale = new Vector3(scaleX, scaleY, 1f);
 
         float cursedFootOffset =
-            (sprite.bounds.min.y + CursedBaldiSizing.CursedBottomPaddingUnits) *
-            CursedBaldiSizing.CanonicalWorldScaleY;
+            (sprite.bounds.min.y + CursedBaldiSizing.BottomPaddingUnits(sprite)) * scaleY;
         visual.transform.localPosition = Vector3.up * -cursedFootOffset;
     }
 
