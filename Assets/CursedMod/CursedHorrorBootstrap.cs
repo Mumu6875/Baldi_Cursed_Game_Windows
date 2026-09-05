@@ -154,9 +154,29 @@ public class CursedHorrorBootstrap : MonoBehaviour
 
     private void PatchPhase2SceneVisuals()
     {
+        HidePhase2ExteriorGarden();
         PatchExitSigns();
         PatchPhase2SchoolRulesPosters();
         PatchPhase2MathBlackboards();
+    }
+
+    private static void HidePhase2ExteriorGarden()
+    {
+        if (!CursedPhaseManager.IsPhase2) return;
+
+        Renderer[] renderers = Resources.FindObjectsOfTypeAll<Renderer>();
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer.gameObject.scene.name != "School") continue;
+            if (!HasAncestorNamed(renderer.transform, "Entrances")) continue;
+
+            string objectName = renderer.gameObject.name;
+            if (objectName != "Grass" && objectName != "Fence" && objectName != "PlantSprite") continue;
+
+            // Keep ground/boundary colliders and the entrance's exit triggers active.
+            renderer.enabled = false;
+        }
     }
 
     private static void PatchPhase2HowToPlayText(Scene scene)
