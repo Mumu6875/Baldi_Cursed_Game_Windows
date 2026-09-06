@@ -8,7 +8,19 @@ Phase2'de, School sahnesindeki Alarm Clock'un bulunduğu **FacultyRoom1** odası
 
 Seçili masa, odanın `Objects` nesnesinin altındaki, yerel konumu `(-4, 1, -10)` olan `Desk` nesnesidir. Mevcut School sahnesinde masanın dünya merkezi `(-45, 1, 171)`, üst yüzeyi `y=2,5` seviyesindedir. Shell bu üst yüzeyin merkezine yerleştirilir. Masanın yatay sınırları `x=-47…-43` ve `z=166…176` aralığındadır; 2,5 birimlik eşya bu yüzeye sığar. Masa Alarm Clock ve Quarter eşyalarından ayrıdır.
 
-Konum, masanın çarpışma kutusundan hesaplanır; ortam taşındığında masayı takip eder. Kurulum, toplanıp devre dışı bırakılmış Shell nesnesini de kontrol eder. Böylece aynı sahne oturumunda kurulum tekrar çağrılsa bile eşya yeniden oluşmaz. Yeni bir oyun/sahne yüklemesinde bir adet yeniden oluşturulur. Belirlenmiş masa veya Alarm Clock'un bu odada olduğu doğrulanamazsa başka yere yerleştirme yapılmaz.
+Fakülte odalarının ID'leri sahnede `FacultyRoomIdentity` bileşeniyle kalıcı olarak tutulur. ID'ler oda adından, konumundan veya arama sırasından çalışma anında üretilmez. Eşya ID'leri ile oda ID'leri ayrı sistemlerdir; örneğin oda ID 3 ile eşya ID 3 çakışmaz.
+
+| Oda ID | Mevcut dünya konumu (x, y, z) | Not |
+| --- | --- | --- |
+| 1 | (-85, 0, 55) | Fakülte odası |
+| 2 | (95, 0, 85) | Fakülte odası |
+| 3 | (-55, 0, 175) | Alarm Clock ve Shell'in bulunduğu oda |
+| 4 | (-15, 0, 85) | Fakülte odası |
+| 5 | (85, 0, 245) | Fakülte odası |
+
+Konumlar yalnızca odaları tanımak içindir. Runtime oda seçimi ID ile yapılır. Shell, oda ID 3'ün sahnede kayıtlı `ItemTable` bağlantısını kullanır. Böylece aynı `FacultyRoom1` adını taşıyan beş odanın hangisinin ilk bulunduğuna bağımlılık kaldırılmıştır. İsim veya masa koordinatı araması yapılmaz. Eşyanın görsel malzemesi için referans alınan mevcut item sprite'ı da sahnede doğrudan bağlanmıştır.
+
+Kurulum, toplanıp devre dışı bırakılmış Shell nesnesini de kontrol eder. Aynı sahne oturumunda kurulum tekrar çağrılsa bile eşya yeniden oluşmaz. Yeni bir oyun/sahne yüklemesinde bir adet yeniden oluşturulur. Oda ID 3 veya masa bağlantısı eksikse hata kaydı yazılır. Aynı sahnede tekrarlanan bir oda ID'si bulunursa ilk oda keyfî olarak seçilmez. `FacultyRoomBuildValidation`, derleme sırasında oda ID'lerinin pozitif ve benzersiz olduğunu, fakülte odalarının kimlik bileşenlerini ve Shell masasının doğru odaya bağlı olduğunu kontrol eder.
 
 Android ve Windows'ta mevcut ekran ortası etkileşim sistemi ve envanter arayüzü kullanılır.
 

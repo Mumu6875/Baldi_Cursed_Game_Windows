@@ -49,36 +49,16 @@ public static class ShellItem
         }
 
         Sprite icon = Resources.Load<Sprite>("CursedMod/Shell");
-        GameObject anchor = GameObject.Find("Pickup_AlarmClock");
-        GameObject room = GameObject.Find("FacultyRoom1");
-        if (icon == null || anchor == null || room == null) return;
-        Transform furniture = room.transform.Find("Objects");
-        if (furniture == null) return;
-
-        // School.unity: this specific desk is in the Alarm Clock's faculty room.
-        // Room-local position is stable even when Environment is moved or rotated.
-        Transform table = null;
-        bool clockInThisRoom = false;
-        foreach (Transform child in furniture)
+        FacultyRoomIdentity room = FacultyRoomIdentity.FindInScene(
+            controller.gameObject.scene, FacultyRoomIdentity.AlarmClockRoomId);
+        if (icon == null || room == null || !room.isActiveAndEnabled || room.ItemTable == null)
         {
-            if (child.name != "Desk") continue;
-            BoxCollider deskCollider = child.GetComponent<BoxCollider>();
-            if (deskCollider == null) continue;
-            Bounds bounds = deskCollider.bounds;
-            Vector3 clock = anchor.transform.position;
-            if (clock.x >= bounds.min.x && clock.x <= bounds.max.x &&
-                clock.z >= bounds.min.z && clock.z <= bounds.max.z)
-                clockInThisRoom = true;
-            if ((child.localPosition - new Vector3(-4f, 1f, -10f)).sqrMagnitude < 0.001f)
-                table = child;
-        }
-        if (!clockInThisRoom || table == null)
-        {
-            Debug.LogError("Shell's designated desk in the Alarm Clock faculty room was not found.");
+            Debug.LogError("Shell sprite or faculty room ID 3/table reference is missing.");
             return;
         }
 
-        Bounds tabletop = table.GetComponent<BoxCollider>().bounds;
+        // The scene stores the exact desk reference: no room names or coordinate search.
+        Bounds tabletop = room.ItemTable.bounds;
         GameObject pickup = new GameObject("Pickup_Shell");
         pickup.tag = "Item";
         // Parent to the room, not the scaled desk, to preserve item size.
@@ -99,7 +79,7 @@ public static class ShellItem
         image.transform.localScale = Vector3.one * (2.5f / icon.bounds.size.y);
         SpriteRenderer renderer = image.AddComponent<SpriteRenderer>();
         renderer.sprite = icon;
-        SpriteRenderer reference = anchor.GetComponentInChildren<SpriteRenderer>();
+        SpriteRenderer reference = room.ItemStyleReference;
         if (reference != null) renderer.sharedMaterial = reference.sharedMaterial;
         image.AddComponent<Billboard>();
     }

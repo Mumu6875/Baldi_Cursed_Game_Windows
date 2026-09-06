@@ -3386,6 +3386,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5405}
+  - component: {fileID: 987654321001}
   m_Layer: 0
   m_Name: FacultyRoom1
   m_TagString: Untagged
@@ -11958,6 +11959,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5957}
+  - component: {fileID: 987654321002}
   m_Layer: 0
   m_Name: FacultyRoom1
   m_TagString: Untagged
@@ -29636,6 +29638,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7065}
+  - component: {fileID: 987654321003}
   m_Layer: 0
   m_Name: FacultyRoom1
   m_TagString: Untagged
@@ -69237,6 +69240,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9663}
+  - component: {fileID: 987654321004}
   m_Layer: 0
   m_Name: FacultyRoom1
   m_TagString: Untagged
@@ -70678,6 +70682,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9762}
+  - component: {fileID: 987654321005}
   m_Layer: 0
   m_Name: FacultyRoom1
   m_TagString: Untagged
@@ -399859,3 +399864,78 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2146933589}
   m_CullTransparentMesh: 0
+--- !u!114 &987654321001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 139cbc5b0ec146f9bdcb2e83cade1f70, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  roomId: 1
+  itemTable: {fileID: 0}
+  itemStyleReference: {fileID: 0}
+--- !u!114 &987654321002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 794}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 139cbc5b0ec146f9bdcb2e83cade1f70, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  roomId: 2
+  itemTable: {fileID: 0}
+  itemStyleReference: {fileID: 0}
+--- !u!114 &987654321003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 139cbc5b0ec146f9bdcb2e83cade1f70, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  roomId: 3
+  itemTable: {fileID: 20394}
+  itemStyleReference: {fileID: 20819}
+--- !u!114 &987654321004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4591}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 139cbc5b0ec146f9bdcb2e83cade1f70, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  roomId: 4
+  itemTable: {fileID: 0}
+  itemStyleReference: {fileID: 0}
+--- !u!114 &987654321005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4690}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 139cbc5b0ec146f9bdcb2e83cade1f70, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  roomId: 5
+  itemTable: {fileID: 0}
+  itemStyleReference: {fileID: 0}
