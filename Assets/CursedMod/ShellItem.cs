@@ -39,51 +39,68 @@ public static class ShellItem
     public static void InstallPickup(GameControllerScript controller)
     {
         if (controller == null || !CursedPhaseManager.IsTestRoomEnabled ||
-            controller.gameObject.scene.name != "School" || GameObject.Find("Pickup_Shell") != null) return;
+            controller.gameObject.scene.name != "School") return;
+
+        // Include collected (inactive) pickups so reinstallation cannot respawn the item.
+        foreach (PickupScript existing in Resources.FindObjectsOfTypeAll<PickupScript>())
+        {
+            if (existing.gameObject.scene == controller.gameObject.scene &&
+                existing.name == "Pickup_Shell") return;
+        }
+
         Sprite icon = Resources.Load<Sprite>("CursedMod/Shell");
         GameObject anchor = GameObject.Find("Pickup_AlarmClock");
-        if (icon == null || anchor == null) return;
+        GameObject room = GameObject.Find("FacultyRoom1");
+        if (icon == null || anchor == null || room == null) return;
+        Transform furniture = room.transform.Find("Objects");
+        if (furniture == null) return;
 
-        // Place beside the existing clock, on reachable floor and on the same side of walls.
-        Vector3[] offsets = { Vector3.right * 4f, Vector3.left * 4f,
-            Vector3.forward * 4f, Vector3.back * 4f };
-        foreach (Vector3 offset in offsets)
+        // School.unity: this specific desk is in the Alarm Clock's faculty room.
+        // Room-local position is stable even when Environment is moved or rotated.
+        Transform table = null;
+        bool clockInThisRoom = false;
+        foreach (Transform child in furniture)
         {
-            NavMeshHit hit;
-            // The clock sits on a table at y=4; query near the floor, not at tabletop height.
-            if (!NavMesh.SamplePosition(anchor.transform.position + offset + Vector3.down * 4f,
-                out hit, 3f, NavMesh.AllAreas)) continue;
-            Vector3 separation = hit.position - anchor.transform.position;
-            separation.y = 0f;
-            if (separation.magnitude < 3.2f) continue;
-            Vector3 center = hit.position + Vector3.up * 1.5f;
-            if (Physics.Linecast(anchor.transform.position + Vector3.up * 1.5f, center,
-                769, QueryTriggerInteraction.Ignore)) continue;
-            if (Physics.CheckSphere(center, 1.25f, 769, QueryTriggerInteraction.Ignore)) continue;
-
-            GameObject pickup = new GameObject("Pickup_Shell");
-            pickup.tag = "Item";
-            pickup.transform.position = hit.position;
-            CapsuleCollider collider = pickup.AddComponent<CapsuleCollider>();
-            collider.isTrigger = true;
-            collider.center = Vector3.up * 1.5f;
-            collider.radius = 1.25f;
-            collider.height = 2.5f;
-            PickupScript interaction = pickup.AddComponent<PickupScript>();
-            interaction.gc = controller;
-            interaction.player = controller.playerTransform;
-
-            GameObject image = new GameObject("Shell Sprite");
-            image.transform.SetParent(pickup.transform, false);
-            image.transform.localPosition = Vector3.up * 1.5f;
-            image.transform.localScale = Vector3.one * (2.5f / icon.bounds.size.y);
-            SpriteRenderer renderer = image.AddComponent<SpriteRenderer>();
-            renderer.sprite = icon;
-            SpriteRenderer reference = anchor.GetComponentInChildren<SpriteRenderer>();
-            if (reference != null) renderer.sharedMaterial = reference.sharedMaterial;
-            image.AddComponent<Billboard>();
+            if (child.name != "Desk") continue;
+            BoxCollider deskCollider = child.GetComponent<BoxCollider>();
+            if (deskCollider == null) continue;
+            Bounds bounds = deskCollider.bounds;
+            Vector3 clock = anchor.transform.position;
+            if (clock.x >= bounds.min.x && clock.x <= bounds.max.x &&
+                clock.z >= bounds.min.z && clock.z <= bounds.max.z)
+                clockInThisRoom = true;
+            if ((child.localPosition - new Vector3(-4f, 1f, -10f)).sqrMagnitude < 0.001f)
+                table = child;
+        }
+        if (!clockInThisRoom || table == null)
+        {
+            Debug.LogError("Shell's designated desk in the Alarm Clock faculty room was not found.");
             return;
         }
-        Debug.LogError("Shell pickup could not find clear floor beside the Alarm Clock.");
+
+        Bounds tabletop = table.GetComponent<BoxCollider>().bounds;
+        GameObject pickup = new GameObject("Pickup_Shell");
+        pickup.tag = "Item";
+        // Parent to the room, not the scaled desk, to preserve item size.
+        pickup.transform.SetParent(room.transform, true);
+        pickup.transform.position = new Vector3(tabletop.center.x, tabletop.max.y, tabletop.center.z);
+        CapsuleCollider collider = pickup.AddComponent<CapsuleCollider>();
+        collider.isTrigger = true;
+        collider.center = Vector3.up * 1.25f;
+        collider.radius = 1.25f;
+        collider.height = 2.5f;
+        PickupScript interaction = pickup.AddComponent<PickupScript>();
+        interaction.gc = controller;
+        interaction.player = controller.playerTransform;
+
+        GameObject image = new GameObject("Shell Sprite");
+        image.transform.SetParent(pickup.transform, false);
+        image.transform.localPosition = Vector3.up * 1.25f;
+        image.transform.localScale = Vector3.one * (2.5f / icon.bounds.size.y);
+        SpriteRenderer renderer = image.AddComponent<SpriteRenderer>();
+        renderer.sprite = icon;
+        SpriteRenderer reference = anchor.GetComponentInChildren<SpriteRenderer>();
+        if (reference != null) renderer.sharedMaterial = reference.sharedMaterial;
+        image.AddComponent<Billboard>();
     }
 }
