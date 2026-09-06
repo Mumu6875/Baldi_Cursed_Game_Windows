@@ -611,6 +611,8 @@ public class GameControllerScript : MonoBehaviour
 	public RectTransform itemSelect;
 	public int[] itemSelectOffset;
 	public int itemSelectPosition;
+	// Read-only access for item effects; pause/learning state stays owned by this controller.
+	public bool CanUseItems { get { return Time.timeScale > 0f && !gamePaused && !learningActive; } }
 	private bool gamePaused;
 	private bool learningActive;
 	private float gameOverDelay;

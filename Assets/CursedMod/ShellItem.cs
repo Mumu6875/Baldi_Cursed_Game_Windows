@@ -17,7 +17,7 @@ public static class ShellItem
 
     public static bool TryUse(GameControllerScript controller)
     {
-        if (Time.timeScale <= 0f || controller.gamePaused || controller.learningActive) return false;
+        if (controller == null || !controller.CanUseItems) return false;
         BaldiScript baldi = controller.baldiScrpt;
         if (baldi == null || !baldi.isActiveAndEnabled) return false;
         // Phase 2 initially shows normal Baldi: only the actual cursed skin qualifies.
