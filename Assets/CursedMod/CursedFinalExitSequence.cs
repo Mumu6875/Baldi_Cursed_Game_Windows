@@ -245,7 +245,7 @@ public class CursedFinalExitSequence : MonoBehaviour
         labelObject.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
         TextMesh label = labelObject.GetComponent<TextMesh>();
         label.text = "99";
-        label.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         label.fontSize = 96;
         label.fontStyle = FontStyle.Bold;
         label.characterSize = 0.085f;
@@ -397,7 +397,7 @@ public class CursedFinalExitSequence : MonoBehaviour
         textRect.offsetMin = Vector2.zero;
         textRect.offsetMax = Vector2.zero;
         messageText = message.GetComponent<Text>();
-        messageText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        messageText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         messageText.fontSize = 42;
         messageText.alignment = TextAnchor.MiddleCenter;
         messageText.color = Color.white;
@@ -517,7 +517,7 @@ public class CursedFinalExitSequence : MonoBehaviour
 
         Text codeText = codeObject.GetComponent<Text>();
         codeText.text = completionCode;
-        codeText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        codeText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         codeText.fontSize = 132;
         codeText.fontStyle = FontStyle.Bold;
         codeText.alignment = TextAnchor.MiddleCenter;

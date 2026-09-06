@@ -78,7 +78,7 @@ public sealed class CursedPhase4Screen : MonoBehaviour
         Stretch(textRect, new Vector2(0.08f, 0.34f), new Vector2(0.92f, 0.61f));
         Text text = textObject.GetComponent<Text>();
         text.text = "You were just a mistake.";
-        text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         text.fontSize = 82;
         text.fontStyle = FontStyle.Bold;
         text.alignment = TextAnchor.MiddleCenter;

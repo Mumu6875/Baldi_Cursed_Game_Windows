@@ -140,7 +140,7 @@ public sealed class CursedPhase3Screen : MonoBehaviour
         RectTransform rect = textObject.GetComponent<RectTransform>();
         Stretch(rect, anchorMin, anchorMax);
         Text text = textObject.GetComponent<Text>();
-        text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         text.fontSize = fontSize;
         text.fontStyle = FontStyle.Bold;
         text.alignment = TextAnchor.MiddleCenter;

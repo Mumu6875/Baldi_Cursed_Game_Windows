@@ -9,6 +9,8 @@ public class GameControllerScript : MonoBehaviour
 	private void Start()
 	{
 		ShellItem.Register(this);
+		// Install before UI setup: unrelated UI errors must not prevent the pickup.
+		ShellItem.InstallPickup(this);
 		cullingMask = playerCamera.cullingMask; // Changes cullingMask in the Camera
 		audioDevice = GetComponent<AudioSource>(); //Get the Audio Source
 		schoolMusic.Play(); //Play the school music

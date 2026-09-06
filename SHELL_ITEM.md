@@ -6,7 +6,7 @@ Shell'in eşya kimliği **12**'dir. Önceki eşyaların kimlikleri değiştirilm
 
 Phase2'de, School sahnesindeki Alarm Clock'un bulunduğu **FacultyRoom1** odasında, yalnızca seçili masanın üzerinde **bir adet** Shell oluşur. Zeminde veya başka odalarda Shell oluşturulmaz.
 
-Seçili masa, odanın `Objects` nesnesinin altındaki, yerel konumu `(-4, 1, -10)` olan `Desk` nesnesidir. Mevcut School sahnesinde masanın dünya merkezi `(-45, 1, 171)`, üst yüzeyi `y=2,5` seviyesindedir. Shell bu üst yüzeyin merkezine yerleştirilir. Masanın yatay sınırları `x=-47…-43` ve `z=166…176` aralığındadır; 2,5 birimlik eşya bu yüzeye sığar. Masa Alarm Clock ve Quarter eşyalarından ayrıdır.
+Seçili masa, odanın `Objects` nesnesinin altındaki, yerel konumu `(-4, 1, -10)` olan `Desk` nesnesidir. Mevcut School sahnesinde masanın dünya merkezi `(-45, 1, 171)` konumundadır. Çarpışma kutusunun üstü `y=2,5`, görünür masa modelinin üstü yaklaşık `y=2,65` seviyesindedir. Kurulum her iki yüzeyi de dikkate alır; Shell’in alt kenarı 0,05 birim açıklıkla `y≈2,70` seviyesine, merkezi `y≈4,20` seviyesine yerleştirilir. Görsel ve kutu biçimindeki etkileşim alanı 3 birim yüksekliğindedir; üst kenarı `y≈5,70` olur. Kamera `y=5` seviyesinde olduğundan ekran ortasından çıkan yatay ışın artık etkileşim alanının içinden geçer. Masanın yatay sınırları `x=-47…-43` ve `z=166…176` aralığındadır; 3 birimlik eşya bu yüzeye sığar. Masa Alarm Clock ve Quarter eşyalarından ayrıdır.
 
 Fakülte odalarının ID'leri sahnede `FacultyRoomIdentity` bileşeniyle kalıcı olarak tutulur. ID'ler oda adından, konumundan veya arama sırasından çalışma anında üretilmez. Eşya ID'leri ile oda ID'leri ayrı sistemlerdir; örneğin oda ID 3 ile eşya ID 3 çakışmaz.
 
@@ -21,6 +21,8 @@ Fakülte odalarının ID'leri sahnede `FacultyRoomIdentity` bileşeniyle kalıc�
 Konumlar yalnızca odaları tanımak içindir. Runtime oda seçimi ID ile yapılır. Shell, oda ID 3'ün sahnede kayıtlı `ItemTable` bağlantısını kullanır. Böylece aynı `FacultyRoom1` adını taşıyan beş odanın hangisinin ilk bulunduğuna bağımlılık kaldırılmıştır. İsim veya masa koordinatı araması yapılmaz. Eşyanın görsel malzemesi için referans alınan mevcut item sprite'ı da sahnede doğrudan bağlanmıştır.
 
 Kurulum, toplanıp devre dışı bırakılmış Shell nesnesini de kontrol eder. Aynı sahne oturumunda kurulum tekrar çağrılsa bile eşya yeniden oluşmaz. Yeni bir oyun/sahne yüklemesinde bir adet yeniden oluşturulur. Oda ID 3 veya masa bağlantısı eksikse hata kaydı yazılır. Aynı sahnede tekrarlanan bir oda ID'si bulunursa ilk oda keyfî olarak seçilmez. `FacultyRoomBuildValidation`, derleme sırasında oda ID'lerinin pozitif ve benzersiz olduğunu, fakülte odalarının kimlik bileşenlerini ve Shell masasının doğru odaya bağlı olduğunu kontrol eder.
+
+Kurulum `GameControllerScript.Start()` içinde, eşya simgesi kaydedilir kaydedilmez çalışır. Mobil arayüz veya atmosfer kurulumunun başarısına bağımlı değildir. Bootstrap içindeki ikinci çağrı tekrar oluşturma kontrolü sayesinde yeni eşya üretmez. Phase 1, Phase 3, Phase 4 ve TestRoom sahnesinde Shell oluşturulmaz. Başarılı kurulum oda ID’si ve dünya konumuyla log’a yazılır.
 
 Android ve Windows'ta mevcut ekran ortası etkileşim sistemi ve envanter arayüzü kullanılır.
 
@@ -59,3 +61,9 @@ Masa yerleşimi güncellemesinde iki platformun School sahnesindeki oda/masa hiy
 Bu ortamda Unity Editor ve cihaz üzerinde canlı oynanış testi yapılamadı. Unity Build Automation, eksik veya yanlış içe aktarılmış görsel/ses dosyalarını reddetmek için `ShellBuildValidation` kontrolünü çalıştırır. Unity'de `Cursed Baldi > Validate Shell Assets` komutu da kullanılabilir.
 
 Yeni derlemede Phase2'de masada bir adet eşya bulunması, toplandıktan sonra tekrar oluşmaması, iki platformda toplama/kullanım, farklı açılardan kafa kaplaması, duraklatma, yeniden kullanım, sürenin bitmesi, sahneden çıkış ve görüş engelliyken ses takibi canlı olarak kontrol edilmelidir. Normal Baldi'de kullanmaya çalışınca eşyanın envanterde kaldığı da doğrulanmalıdır.
+
+## 6 Eylül 2026 yerleşim düzeltmesi
+
+`FacultyRoomBuildValidation` artık gerçek çalışma zamanı üretim metoduyla geçici bir Shell oluşturur. Görselin etkinliğini, masa üstünde durmasını, masaya sığmasını ve kamera yüksekliğindeki dört yatay ışının etkileşim kutusuna çarpmasını kontrol eder; geçici nesneyi `finally` içinde kaldırır. Bu kontrol School sahnesi derlenirken otomatik çalışır. Açık School sahnesinde `Cursed Baldi > Validate Shell Placement In Open School` menüsünden de çalıştırılabilir.
+
+Bu ortamda sahne dosyalarının dönüşüm/geometri hesabı ve C# sözdizimi kontrol edilmiştir. Unity derleme kontrolünün çalıştığı veya cihaz testinin geçtiği henüz iddia edilmemektedir. Gönderilen eski derleme log’unun incelemesi ve kalan araç zinciri uyarıları `BUILD_LOG_REVIEW.md` dosyasındadır.
