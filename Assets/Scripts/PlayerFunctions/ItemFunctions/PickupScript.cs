@@ -10,6 +10,13 @@ public class PickupScript : MonoBehaviour
 			RaycastHit raycastHit;
 			if (Physics.Raycast(ray, out raycastHit))
 			{
+				if (raycastHit.transform == transform && name == "Pickup_Shell" &&
+					Vector3.Distance(player.position, transform.position) < 10f)
+				{
+					gc.CollectItem(ShellItem.ItemId);
+					gameObject.SetActive(false);
+					return;
+				}
 				if (raycastHit.transform.name == "Pickup_EnergyFlavoredZestyBar" & Vector3.Distance(player.position, transform.position) < 10f)
 				{
 					raycastHit.transform.gameObject.SetActive(false);

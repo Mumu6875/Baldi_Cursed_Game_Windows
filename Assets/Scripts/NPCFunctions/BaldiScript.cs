@@ -30,6 +30,7 @@ public class BaldiScript : MonoBehaviour
 	}
 	private void Update()
 	{
+		shellBlindTime = Mathf.Max(0f, shellBlindTime - Time.deltaTime);
 		if (timeToMove > 0f) //If timeToMove is greater then 0, decrease it
 		{
 			timeToMove -= 1f * Time.deltaTime;
@@ -70,6 +71,11 @@ public class BaldiScript : MonoBehaviour
 		{
 			agent.speed = 0f;
 		}
+		if (IsShellBlind)
+		{
+			db = false;
+			return; // Movement and hearing continue; only vision is blocked.
+		}
 		Vector3 direction = player.position - transform.position; 
 		RaycastHit raycastHit;
 		if (Physics.Raycast(transform.position + Vector3.up * 2f, direction, out raycastHit, float.PositiveInfinity, 769, QueryTriggerInteraction.Ignore) & raycastHit.transform.tag == "Player") //Create a raycast, if the raycast hits the player, Baldi can see the player
@@ -91,6 +97,7 @@ public class BaldiScript : MonoBehaviour
 	}
 	public void TargetPlayer()
 	{
+		if (IsShellBlind) return;
 		agent.SetDestination(player.position); //Target the player
 		coolDown = 1f;
 		currentPriority = 0f;
@@ -120,6 +127,16 @@ public class BaldiScript : MonoBehaviour
 	{
 		baldiTempAnger += value; //Increase Baldi's Temporary Anger
 	}
+	private float shellBlindTime;
+	public bool IsShellBlind { get { return shellBlindTime > 0f; } }
+	public void ApplyShellBlindness(float duration)
+	{
+		shellBlindTime = Mathf.Max(0f, duration);
+		db = false;
+		Wander(); // Only once: later sounds must keep their destination.
+	}
+	public void ClearShellBlindness() { shellBlindTime = 0f; }
+	private void OnDisable() { ClearShellBlindness(); }
 	public void Hear(Vector3 soundLocation, float priority)
 	{
 		if (!antiHearing && priority >= currentPriority) //If anti-hearing is not active and the priority is greater then the priority of the current sound
