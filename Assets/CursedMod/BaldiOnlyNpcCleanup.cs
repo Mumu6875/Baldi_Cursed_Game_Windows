@@ -21,7 +21,8 @@ public sealed class BaldiOnlyNpcCleanup : MonoBehaviour
         "Arts and Crafters",
         "Gotta Sweep",
         "Its a Bully",
-        "BullySprite"
+        "BullySprite",
+        "filename2"
     };
 
     private static BaldiOnlyNpcCleanup instance;

@@ -237,6 +237,8 @@ public class MathGameScript : MonoBehaviour
         else
         {
             endDelay = 5f;
+            // Count failed notebooks independently of the phase-specific message.
+            if (problemsWrong >= 3) gc.failedNotebooks++;
             if (CursedPhaseManager.IsPhase2 && gc.notebooks == 2)
             {
                 ShowPhase2FinalNotebookMessage();
@@ -251,7 +253,6 @@ public class MathGameScript : MonoBehaviour
                 questionText2.text = string.Empty;
                 questionText3.text = string.Empty;
                 if (baldiScript.isActiveAndEnabled) baldiScript.Hear(playerPosition, 7f);
-                gc.failedNotebooks++;
             }
             else
             {

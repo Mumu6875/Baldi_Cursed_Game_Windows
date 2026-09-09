@@ -7,6 +7,13 @@ public class ExitTriggerScript : MonoBehaviour
 	{
 		if (gc.notebooks >= 7 & other.tag == "Player")
 		{
+			// The all-wrong ending takes priority over the Room 99 sequence.
+			if (gc.failedNotebooks >= 7)
+			{
+				SceneManager.LoadScene(SecretScene);
+				return;
+			}
+
 			// The fourth/final exit now opens the Room 99 horror sequence instead
 			// of immediately loading the normal results scene.
 			if (gc.finaleMode && gc.exitsReached >= 3 &&
@@ -15,14 +22,7 @@ public class ExitTriggerScript : MonoBehaviour
 				return;
 			}
 
-			if (gc.failedNotebooks >= 7) //If the player got all the problems wrong on all the 7 notebooks
-			{
-				SceneManager.LoadScene(SecretScene); //Go to the secret ending
-			}
-			else
-			{
-				SceneManager.LoadScene(ResultsScene); //Go to the win screen
-			}
+			SceneManager.LoadScene(ResultsScene); //Go to the win screen
 		}
 	}
 	public GameControllerScript gc;
