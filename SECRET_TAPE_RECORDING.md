@@ -12,6 +12,7 @@ Voice: Adult Male #2, American English (TruVoice).
 SAPI4 service: https://tetyys.com/SAPI4/
 Pitch: 140; speed: 157. Generated using the online service, not a local Windows engine.
 Four segments with 0.5-second gaps; final trailing silence trimmed for an abrupt ending.
+The approved recording is stored as PCM WAV and rendered at 0.5x playback speed while preserving pitch.
 
 The Secret scene reuses the principal-office loaded TapePlayerClosed sprite.
 Entering the room plays the recording once. Pausing pauses the recording.
