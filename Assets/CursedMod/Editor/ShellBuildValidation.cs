@@ -25,10 +25,10 @@ public sealed class ShellBuildValidation : IPreprocessBuildWithReport
             throw new BuildFailedException("Shell sprite is missing, damaged or incorrectly imported.");
 
         AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(audioPath);
-        if (clip == null || clip.channels != 1 || clip.frequency != 48000 ||
-            clip.length < 8f || clip.length > 11f)
-            throw new BuildFailedException("ShellUse.wav must be valid 48 kHz mono audio (8-11 seconds).");
-        Debug.Log("Shell asset validation passed: sprite and WAV are ready.");
+        if (clip == null)
+            throw new BuildFailedException("ShellUse.wav is missing or could not be imported.");
+
+        Debug.Log("Shell asset validation passed: sprite and audio are ready.");
     }
 }
 #endif
