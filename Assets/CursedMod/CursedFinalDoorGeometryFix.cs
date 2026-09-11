@@ -1,12 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 /// <summary>
 /// Final-pass geometry correction for the runtime-generated cafeteria finale door.
 /// The finale door itself still uses the normal DoorScript. This component only
-/// fixes runtime placement / doorway geometry after CursedFinalExitSequence has
-/// spawned the door and narrow room.
+/// fixes runtime placement and removes unrelated scene-wall collision from the
+/// small doorway aperture while the player is actually near that doorway.
 /// </summary>
 public class CursedFinalDoorGeometryFix : MonoBehaviour
 {
@@ -17,8 +18,8 @@ public class CursedFinalDoorGeometryFix : MonoBehaviour
 
     private const float DoorwayWidth = 4.5f;
     private const float DoorwayHeight = 5.4f;
-    private const float DoorwayDepth = 4.6f;
-    private const float PassageInsideOffset = 0.65f;
+    private const float DoorwayDepth = 5.6f;
+    private const float PassageInsideOffset = 0.75f;
 
     private static CursedFinalDoorGeometryFix instance;
     private int fixedDoorInstanceId;
@@ -78,9 +79,6 @@ public class CursedFinalDoorGeometryFix : MonoBehaviour
             return;
         }
 
-        // The old placement used a hard-coded +2.8 Y offset. Normal school
-        // doors do not guarantee that their root pivot sits at that height.
-        // Align the actual visible bottom of the cloned door to the real floor.
         Bounds visualBounds;
         if (TryGetRendererBounds(door, out visualBounds))
         {
@@ -103,10 +101,7 @@ public class CursedFinalDoorGeometryFix : MonoBehaviour
         int ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
         if (ignoreRaycastLayer < 0) ignoreRaycastLayer = 2;
 
-        // Critical: this helper trigger sits in front of the real DoorScript
-        // trigger. If it participates in raycasts, DoorScript.Update() hits this
-        // collider first and refuses to open because the hit collider is not its
-        // own trigger. Keep it as a physical trigger, but exclude it from raycasts.
+        // This helper trigger must never steal DoorScript's interaction ray.
         passage.layer = ignoreRaycastLayer;
 
         Vector3 outward = door.transform.forward;
@@ -115,7 +110,10 @@ public class CursedFinalDoorGeometryFix : MonoBehaviour
         outward.Normalize();
 
         passage.transform.position =
-            new Vector3(door.transform.position.x, floorY + DoorwayHeight * 0.5f, door.transform.position.z)
+            new Vector3(
+                door.transform.position.x,
+                floorY + DoorwayHeight * 0.5f,
+                door.transform.position.z)
             - outward * PassageInsideOffset;
         passage.transform.rotation = Quaternion.LookRotation(outward, Vector3.up);
 
@@ -126,26 +124,30 @@ public class CursedFinalDoorGeometryFix : MonoBehaviour
             passageCollider.size = new Vector3(DoorwayWidth, DoorwayHeight, DoorwayDepth);
         }
 
-        Transform cafeteria = door.transform.parent;
-        Collider[] blockers = FindDoorwayBlockers(door, cafeteria, floorY, outward);
+        // The previous implementation only accepted colliders parented under
+        // Cafeteria. Schoolhouse wall colliders may live under another scene root,
+        // so that filter could miss the real wall completely.
+        Collider[] blockers = FindDoorwayBlockers(door, floorY, outward);
 
-        // DoorScript uses Physics.Raycast without a custom mask. Any cafeteria
-        // wall collider directly behind/in front of the runtime door can steal
-        // that ray before it reaches DoorScript.trigger. Ignore those wall
-        // colliders only for raycasts; their normal physical collision remains.
-        for (int i = 0; i < blockers.Length; i++)
-        {
-            Collider blocker = blockers[i];
-            if (blocker == null) continue;
-            blocker.gameObject.layer = ignoreRaycastLayer;
-        }
-
-        CursedDoorwayPassageTrigger passageScript =
+        // Disable the older trigger-event-only bypass. A proximity watcher below
+        // is more reliable because it applies before the CharacterController hits
+        // the wall, even if an OnTriggerEnter event is missed.
+        CursedDoorwayPassageTrigger legacyPassage =
             passage.GetComponent<CursedDoorwayPassageTrigger>();
-        if (passageScript != null)
+        if (legacyPassage != null)
         {
-            passageScript.blockingColliders = blockers;
+            legacyPassage.blockingColliders = new Collider[0];
+            legacyPassage.enabled = false;
         }
+
+        CursedFinalDoorwayCollisionBypass bypass =
+            passage.GetComponent<CursedFinalDoorwayCollisionBypass>();
+        if (bypass == null)
+        {
+            bypass = passage.AddComponent<CursedFinalDoorwayCollisionBypass>();
+        }
+
+        bypass.Configure(door.transform, blockers, DoorwayWidth, DoorwayHeight, DoorwayDepth);
 
         GameObject doorwayVoid = GameObject.Find(DoorwayVoidName);
         if (doorwayVoid != null)
@@ -161,8 +163,74 @@ public class CursedFinalDoorGeometryFix : MonoBehaviour
 
         Physics.SyncTransforms();
         Debug.Log(
-            "Finale door geometry fixed: visual bottom aligned to floor, " +
-            "doorway trigger removed from raycasts, and wall blockers bypassed locally.");
+            "Finale doorway fixed: " + blockers.Length +
+            " scene-wall blocker(s) detected around the physical doorway.");
+    }
+
+    private static Collider[] FindDoorwayBlockers(
+        GameObject door,
+        float floorY,
+        Vector3 outward)
+    {
+        Quaternion rotation = Quaternion.LookRotation(outward, Vector3.up);
+        Vector3 center =
+            new Vector3(
+                door.transform.position.x,
+                floorY + DoorwayHeight * 0.5f,
+                door.transform.position.z)
+            - outward * PassageInsideOffset;
+
+        Collider[] overlaps = Physics.OverlapBox(
+            center,
+            new Vector3(
+                DoorwayWidth * 0.5f,
+                DoorwayHeight * 0.5f,
+                DoorwayDepth * 0.5f),
+            rotation,
+            ~0,
+            QueryTriggerInteraction.Ignore);
+
+        List<Collider> blockers = new List<Collider>();
+
+        for (int i = 0; i < overlaps.Length; i++)
+        {
+            Collider candidate = overlaps[i];
+            if (candidate == null || !candidate.enabled || candidate.isTrigger) continue;
+
+            if (candidate.transform == door.transform ||
+                candidate.transform.IsChildOf(door.transform))
+            {
+                continue;
+            }
+
+            // Never bypass gameplay characters, normal doors or moving agents.
+            if (candidate.GetComponentInParent<PlayerScript>() != null) continue;
+            if (candidate.GetComponentInParent<DoorScript>() != null) continue;
+            if (candidate.GetComponentInParent<NavMeshAgent>() != null) continue;
+
+            string lowerName = candidate.gameObject.name.ToLowerInvariant();
+
+            // Generated room geometry must remain solid, and horizontal surfaces
+            // are not the wall that is blocking the doorway.
+            if (lowerName.Contains("phase 2 narrow room") ||
+                lowerName.Contains("physical doorway") ||
+                lowerName.Contains("doorway void") ||
+                lowerName.Contains("final exit safety blocker") ||
+                lowerName.Contains("floor") ||
+                lowerName.Contains("ground") ||
+                lowerName.Contains("ceiling"))
+            {
+                continue;
+            }
+
+            // The obstruction we are after is wall-height geometry. This avoids
+            // ignoring chairs, tables and small props that happen to be nearby.
+            if (candidate.bounds.size.y < 2.2f) continue;
+
+            blockers.Add(candidate);
+        }
+
+        return blockers.ToArray();
     }
 
     private static bool TryGetFloorSurfaceY(GameObject roomFloor, out float floorY)
@@ -209,53 +277,94 @@ public class CursedFinalDoorGeometryFix : MonoBehaviour
 
         return initialized;
     }
+}
 
-    private static Collider[] FindDoorwayBlockers(
-        GameObject door,
-        Transform cafeteria,
-        float floorY,
-        Vector3 outward)
+/// <summary>
+/// Ignores only the detected scene-wall colliders while the player's
+/// CharacterController is physically close to the finale doorway. The real
+/// DoorScript barrier is intentionally NOT in this list, so a closed door still
+/// blocks the player exactly like every normal Schoolhouse door.
+/// </summary>
+public class CursedFinalDoorwayCollisionBypass : MonoBehaviour
+{
+    private Transform door;
+    private Collider[] blockers;
+    private PlayerScript player;
+    private float doorwayWidth;
+    private float doorwayHeight;
+    private float doorwayDepth;
+    private bool collisionsIgnored;
+
+    public void Configure(
+        Transform doorTransform,
+        Collider[] wallBlockers,
+        float width,
+        float height,
+        float depth)
     {
-        if (cafeteria == null) return new Collider[0];
+        door = doorTransform;
+        blockers = wallBlockers ?? new Collider[0];
+        doorwayWidth = width;
+        doorwayHeight = height;
+        doorwayDepth = depth;
+        player = FindFirstObjectByType<PlayerScript>();
+        RefreshState();
+    }
 
-        Quaternion rotation = Quaternion.LookRotation(outward, Vector3.up);
-        Vector3 center =
-            new Vector3(door.transform.position.x, floorY + DoorwayHeight * 0.5f, door.transform.position.z)
-            - outward * PassageInsideOffset;
+    private void Update()
+    {
+        RefreshState();
+    }
 
-        Collider[] overlaps = Physics.OverlapBox(
-            center,
-            new Vector3(DoorwayWidth * 0.5f, DoorwayHeight * 0.5f, DoorwayDepth * 0.5f),
-            rotation,
-            ~0,
-            QueryTriggerInteraction.Ignore);
+    private void OnDisable()
+    {
+        SetIgnored(false);
+    }
 
-        List<Collider> blockers = new List<Collider>();
+    private void OnDestroy()
+    {
+        SetIgnored(false);
+    }
 
-        for (int i = 0; i < overlaps.Length; i++)
+    private void RefreshState()
+    {
+        if (door == null) return;
+
+        if (player == null)
         {
-            Collider candidate = overlaps[i];
-            if (candidate == null || !candidate.enabled || candidate.isTrigger) continue;
-            if (candidate.transform == door.transform || candidate.transform.IsChildOf(door.transform)) continue;
-
-            if (candidate.transform != cafeteria && !candidate.transform.IsChildOf(cafeteria))
-            {
-                continue;
-            }
-
-            if (candidate.GetComponentInParent<DoorScript>() != null) continue;
-
-            string lowerName = candidate.gameObject.name.ToLowerInvariant();
-            if (lowerName.Contains("floor") || lowerName.Contains("ground") || lowerName.Contains("door"))
-            {
-                continue;
-            }
-
-            if (candidate.bounds.size.y < 2.2f) continue;
-
-            blockers.Add(candidate);
+            player = FindFirstObjectByType<PlayerScript>();
+            if (player == null) return;
         }
 
-        return blockers.ToArray();
+        Vector3 local = door.InverseTransformPoint(player.transform.position);
+
+        // Slight padding starts the bypass before the CharacterController can
+        // contact the wall and keeps it active until the player is clearly
+        // through the doorway on the other side.
+        bool nearDoorway =
+            Mathf.Abs(local.x) <= doorwayWidth * 0.5f + 0.8f &&
+            Mathf.Abs(local.z) <= doorwayDepth * 0.5f + 1.0f &&
+            Mathf.Abs(local.y) <= doorwayHeight + 1.0f;
+
+        SetIgnored(nearDoorway);
+    }
+
+    private void SetIgnored(bool ignored)
+    {
+        if (collisionsIgnored == ignored) return;
+        if (player == null || player.cc == null)
+        {
+            collisionsIgnored = ignored;
+            return;
+        }
+
+        for (int i = 0; i < blockers.Length; i++)
+        {
+            Collider blocker = blockers[i];
+            if (blocker == null) continue;
+            Physics.IgnoreCollision(player.cc, blocker, ignored);
+        }
+
+        collisionsIgnored = ignored;
     }
 }
