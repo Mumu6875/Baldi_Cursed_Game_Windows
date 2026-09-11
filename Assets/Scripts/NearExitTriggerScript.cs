@@ -29,8 +29,37 @@ public class NearExitTriggerScript : MonoBehaviour
         ExitTriggerScript finalExit = FindClosestExitTrigger();
         if (finalExit != null && CursedFinalExitSequence.TryStart(finalExit, other, gc))
         {
+            ApplyPureBlackFinaleSky();
             reached = true;
         }
+    }
+
+    private void ApplyPureBlackFinaleSky()
+    {
+        Camera camera = gc != null ? gc.playerCamera : null;
+        if (camera == null) camera = Camera.main;
+        if (camera == null) return;
+
+        // Keep the skybox system itself enabled. Clone the current environment
+        // skybox only for the player camera, then make that copy completely black.
+        // RenderSettings.skybox is deliberately left untouched so ambient lighting,
+        // reflections and the rest of the world keep their normal appearance.
+        Material sourceSky = RenderSettings.skybox;
+        if (sourceSky == null) return;
+
+        Material blackSky = new Material(sourceSky);
+        blackSky.name = sourceSky.name + " (Finale Black)";
+
+        if (blackSky.HasProperty("_Tint")) blackSky.SetColor("_Tint", Color.black);
+        if (blackSky.HasProperty("_SkyTint")) blackSky.SetColor("_SkyTint", Color.black);
+        if (blackSky.HasProperty("_GroundColor")) blackSky.SetColor("_GroundColor", Color.black);
+        if (blackSky.HasProperty("_Color")) blackSky.SetColor("_Color", Color.black);
+        if (blackSky.HasProperty("_Exposure")) blackSky.SetFloat("_Exposure", 0f);
+
+        Skybox cameraSkybox = camera.GetComponent<Skybox>();
+        if (cameraSkybox == null) cameraSkybox = camera.gameObject.AddComponent<Skybox>();
+        cameraSkybox.material = blackSky;
+        camera.clearFlags = CameraClearFlags.Skybox;
     }
 
     private ExitTriggerScript FindClosestExitTrigger()
