@@ -1,34 +1,50 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Moves the generated Room 99 finale door onto a REAL existing cafeteria
-/// doorway. This avoids placing a door on top of an uncut Schoolhouse wall.
-/// The final door itself remains the normal cloned DoorScript door.
+/// Cuts the Room 99 finale entrance through an actual solid cafeteria wall.
+/// Existing cafeteria doorways are never reused or removed.
 /// </summary>
 public class CursedFinalDoorGeometryFix : MonoBehaviour
 {
-    private const string FinaleDoorName = "Cafeteria Phase 2 Door";
-    private const string RoomRootName = "Cafeteria Phase 2 Narrow Room";
-    private const string RoomFloorName = "Phase 2 Narrow Room Floor";
+    private const string DoorName = "Cafeteria Phase 2 Door";
+    private const string RoomName = "Cafeteria Phase 2 Narrow Room";
+    private const string FloorName = "Phase 2 Narrow Room Floor";
     private const string PassageName = "Cafeteria Phase 2 Physical Doorway Passage";
-    private const string DoorwayVoidName = "Cafeteria Phase 2 Doorway Void";
+    private const string VoidName = "Cafeteria Phase 2 Doorway Void";
+    private const string CutRootName = "Cafeteria Phase 2 Cut Wall";
 
     private const float RoomWidth = 4.8f;
     private const float RoomHeight = 4.6f;
     private const float RoomLength = 13f;
     private const float RoomStartOffset = 0.45f;
-    private const float MaxBoundaryDistance = 6f;
+    private const float OpeningWidth = 4.55f;
+    private const float OpeningHeight = 4.65f;
+    private const float MaxThickness = 2f;
+    private const float MaxWallDistance = 7f;
+    private const float BoundaryTolerance = 3f;
+    private const float MinSide = 0.18f;
 
     private static CursedFinalDoorGeometryFix instance;
-    private int fixedDoorInstanceId;
+    private int fixedDoorId;
+
+    private sealed class WallHit
+    {
+        public Collider collider;
+        public Renderer renderer;
+        public Bounds bounds;
+        public Vector3 outward;
+        public Vector3 span;
+        public Vector3 doorPosition;
+        public float spanLength;
+        public float thickness;
+        public float score;
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Install()
     {
         if (instance != null) return;
-
         GameObject host = new GameObject("Cursed Final Door Geometry Fix");
         instance = host.AddComponent<CursedFinalDoorGeometryFix>();
         DontDestroyOnLoad(host);
@@ -36,524 +52,375 @@ public class CursedFinalDoorGeometryFix : MonoBehaviour
 
     private void OnEnable()
     {
-        StartCoroutine(WatchForFinaleDoor());
+        StartCoroutine(Watch());
     }
 
-    private IEnumerator WatchForFinaleDoor()
+    private IEnumerator Watch()
     {
         while (true)
         {
-            GameObject finalDoor = GameObject.Find(FinaleDoorName);
-            GameObject roomRoot = GameObject.Find(RoomRootName);
-            GameObject roomFloor = GameObject.Find(RoomFloorName);
+            GameObject door = GameObject.Find(DoorName);
+            GameObject room = GameObject.Find(RoomName);
+            GameObject floor = GameObject.Find(FloorName);
             GameObject passage = GameObject.Find(PassageName);
             Transform cafeteria = FindSceneTransform("Cafeteria");
 
-            if (finalDoor != null &&
-                roomRoot != null &&
-                roomFloor != null &&
-                cafeteria != null)
+            if (door != null && room != null && floor != null && cafeteria != null)
             {
-                int currentId = finalDoor.GetInstanceID();
-                if (currentId != fixedDoorInstanceId)
+                int id = door.GetInstanceID();
+                if (id != fixedDoorId && Apply(door, room, floor, passage, cafeteria))
                 {
-                    if (RelocateToRealCafeteriaDoorway(
-                        finalDoor,
-                        roomRoot,
-                        roomFloor,
-                        passage,
-                        cafeteria))
-                    {
-                        fixedDoorInstanceId = currentId;
-                    }
+                    fixedDoorId = id;
                 }
             }
-            else if (finalDoor == null)
+            else if (door == null)
             {
-                fixedDoorInstanceId = 0;
+                fixedDoorId = 0;
             }
 
             yield return null;
         }
     }
 
-    private static bool RelocateToRealCafeteriaDoorway(
-        GameObject finalDoor,
-        GameObject roomRoot,
-        GameObject roomFloor,
-        GameObject passage,
-        Transform cafeteria)
+    private static bool Apply(GameObject door, GameObject room, GameObject roomFloor, GameObject passage, Transform cafeteria)
     {
-        Bounds cafeteriaBounds;
-        if (!TryGetCafeteriaLocalBounds(cafeteria, finalDoor, out cafeteriaBounds))
-        {
-            Debug.LogError("Could not calculate cafeteria bounds for the finale doorway.");
-            return false;
-        }
-
         float floorY;
-        if (!TryGetFloorSurfaceY(roomFloor, out floorY))
-        {
-            Debug.LogError("Could not determine Phase 2 narrow-room floor height.");
-            return false;
-        }
+        if (!TryGetFloorY(roomFloor, out floorY)) return false;
 
-        Transform realDoorway;
-        Vector3 newOutward;
-        if (!TryFindBestExistingCafeteriaDoorway(
-            cafeteria,
-            cafeteriaBounds,
-            finalDoor,
-            out realDoorway,
-            out newOutward))
-        {
-            Debug.LogError(
-                "No existing cafeteria doorway was found. " +
-                "The Room 99 door was not moved onto a solid wall again.");
-            return false;
-        }
+        Bounds cafeteriaBounds;
+        if (!TryGetLocalBounds(cafeteria, door, out cafeteriaBounds)) return false;
 
-        Vector3 oldOutward = finalDoor.transform.forward;
-        oldOutward.y = 0f;
+        Vector3 oldOutward = Horizontal(door.transform.forward);
         if (oldOutward.sqrMagnitude < 0.01f) oldOutward = Vector3.forward;
         oldOutward.Normalize();
 
-        newOutward.y = 0f;
-        if (newOutward.sqrMagnitude < 0.01f) newOutward = Vector3.forward;
-        newOutward.Normalize();
+        WallHit wall;
+        if (!TryFindWall(cafeteria, cafeteriaBounds, door, floorY, oldOutward, out wall))
+        {
+            Debug.LogError("No suitable SOLID cafeteria wall was found for Room 99. Existing cafeteria doorways were intentionally left untouched.");
+            return false;
+        }
 
-        Quaternion oldFrameRotation = Quaternion.LookRotation(oldOutward, Vector3.up);
-        Quaternion newFrameRotation = Quaternion.LookRotation(newOutward, Vector3.up);
+        Quaternion oldRot = Quaternion.LookRotation(oldOutward, Vector3.up);
+        Quaternion newRot = Quaternion.LookRotation(wall.outward, Vector3.up);
+        Vector3 oldOrigin = new Vector3(door.transform.position.x, floorY, door.transform.position.z);
+        Vector3 newOrigin = new Vector3(wall.doorPosition.x, floorY, wall.doorPosition.z);
 
-        Vector3 oldFloorOrigin = new Vector3(
-            finalDoor.transform.position.x,
-            floorY,
-            finalDoor.transform.position.z);
+        if (!CarveWall(wall, floorY, cafeteria)) return false;
 
-        Vector3 newFloorOrigin = new Vector3(
-            realDoorway.position.x,
-            floorY,
-            realDoorway.position.z);
-
-        DisableExistingDoorObject(realDoorway.gameObject);
-
-        Transform roomTransform = roomRoot.transform;
+        Transform roomTransform = room.transform;
         for (int i = 0; i < roomTransform.childCount; i++)
+            MoveFrame(roomTransform.GetChild(i), oldOrigin, oldRot, newOrigin, newRot);
+
+        door.transform.position = wall.doorPosition;
+        door.transform.rotation = newRot;
+        AlignDoorBottom(door, floorY);
+
+        DoorScript[] scripts = door.GetComponentsInChildren<DoorScript>(true);
+        for (int i = 0; i < scripts.Length; i++)
         {
-            Transform child = roomTransform.GetChild(i);
-            MoveBetweenDoorFrames(
-                child,
-                oldFloorOrigin,
-                oldFrameRotation,
-                newFloorOrigin,
-                newFrameRotation);
+            if (scripts[i] == null) continue;
+            scripts[i].enabled = true;
+            scripts[i].UnlockDoor();
+            scripts[i].openingDistance = Mathf.Max(scripts[i].openingDistance, 8f);
         }
 
-        finalDoor.transform.position = realDoorway.position;
-        finalDoor.transform.rotation = newFrameRotation;
-        AlignVisibleBottomToFloor(finalDoor, floorY);
-
-        DoorScript[] finalDoorScripts = finalDoor.GetComponentsInChildren<DoorScript>(true);
-        for (int i = 0; i < finalDoorScripts.Length; i++)
-        {
-            DoorScript door = finalDoorScripts[i];
-            if (door == null) continue;
-            door.enabled = true;
-            door.UnlockDoor();
-            door.openingDistance = Mathf.Max(door.openingDistance, 8f);
-        }
-
-        if (passage != null)
-        {
-            Collider[] passageColliders = passage.GetComponents<Collider>();
-            for (int i = 0; i < passageColliders.Length; i++)
-            {
-                if (passageColliders[i] != null) passageColliders[i].enabled = false;
-            }
-
-            CursedDoorwayPassageTrigger oldBypass =
-                passage.GetComponent<CursedDoorwayPassageTrigger>();
-            if (oldBypass != null) oldBypass.enabled = false;
-
-            CursedFinalDoorwayCollisionBypass newerBypass =
-                passage.GetComponent<CursedFinalDoorwayCollisionBypass>();
-            if (newerBypass != null) newerBypass.enabled = false;
-        }
-
-        GameObject doorwayVoid = GameObject.Find(DoorwayVoidName);
-        if (doorwayVoid != null) doorwayVoid.SetActive(false);
-
+        DisableFakeOpening(passage);
         Physics.SyncTransforms();
-
-        Debug.Log(
-            "Room 99 moved onto real cafeteria doorway '" + realDoorway.name +
-            "'. No fake wall opening or teleport is used.");
+        Debug.Log("Room 99 carved through solid cafeteria wall '" + wall.collider.gameObject.name + "'. No existing doorway was consumed.");
         return true;
     }
 
-    private static bool TryFindBestExistingCafeteriaDoorway(
-        Transform cafeteria,
-        Bounds bounds,
-        GameObject finalDoor,
-        out Transform bestDoorway,
-        out Vector3 bestOutward)
+    private static bool TryFindWall(Transform cafeteria, Bounds cafeteriaBounds, GameObject finalDoor, float floorY, Vector3 preferredOutward, out WallHit best)
     {
-        bestDoorway = null;
-        bestOutward = Vector3.forward;
-        float bestScore = float.MaxValue;
-        HashSet<int> checkedObjects = new HashSet<int>();
-
-        DoorScript[] normalDoors = Resources.FindObjectsOfTypeAll<DoorScript>();
-        for (int i = 0; i < normalDoors.Length; i++)
+        best = null;
+        Collider[] colliders = cafeteria.GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < colliders.Length; i++)
         {
-            DoorScript door = normalDoors[i];
-            if (door == null || !door.gameObject.scene.IsValid()) continue;
-            if (door.gameObject.scene != cafeteria.gameObject.scene) continue;
-            if (door.transform == finalDoor.transform || door.transform.IsChildOf(finalDoor.transform)) continue;
+            Collider c = colliders[i];
+            if (!IsWallLike(c, finalDoor)) continue;
+            Bounds b = c.bounds;
+            if (b.size.y < OpeningHeight + 0.1f) continue;
 
-            EvaluateDoorwayCandidate(
-                cafeteria,
-                bounds,
-                finalDoor,
-                door.transform,
-                checkedObjects,
-                ref bestDoorway,
-                ref bestOutward,
-                ref bestScore);
+            bool thinX = b.size.x <= b.size.z;
+            float thickness = thinX ? b.size.x : b.size.z;
+            float spanLength = thinX ? b.size.z : b.size.x;
+            if (thickness <= 0.02f || thickness > MaxThickness) continue;
+            if (spanLength < OpeningWidth + MinSide * 2f) continue;
+
+            float boundaryDistance = DistanceToCafeteriaBoundary(cafeteria, cafeteriaBounds, b.center);
+            if (boundaryDistance > BoundaryTolerance) continue;
+
+            Renderer renderer = FindMatchingRenderer(c, b);
+            if (renderer == null) continue;
+
+            Vector3 normal = thinX ? Vector3.right : Vector3.forward;
+            Vector3 span = thinX ? Vector3.forward : Vector3.right;
+            if (Vector3.Dot(normal, preferredOutward) < 0f) normal = -normal;
+
+            Vector3 delta = finalDoor.transform.position - b.center;
+            float planeDistance = Mathf.Abs(Vector3.Dot(delta, normal));
+            if (planeDistance > MaxWallDistance) continue;
+
+            float halfSpan = spanLength * 0.5f;
+            float openingHalf = OpeningWidth * 0.5f;
+            float rawOffset = Vector3.Dot(delta, span);
+            float maxOffset = Mathf.Max(0f, halfSpan - openingHalf - MinSide);
+            float offset = Mathf.Clamp(rawOffset, -maxOffset, maxOffset);
+
+            if (floorY < b.min.y - 0.8f || floorY > b.min.y + 1.5f) continue;
+            if (floorY + OpeningHeight > b.max.y + 0.15f) continue;
+
+            Vector3 doorway = b.center + span * offset;
+            doorway.y = floorY + OpeningHeight * 0.5f;
+
+            int obstruction = ScoreRoomSpace(doorway, normal, c, finalDoor);
+            float score = planeDistance * 8f + Mathf.Abs(rawOffset - offset) * 6f + thickness * 2f + boundaryDistance * 12f + obstruction * 28f;
+            if (best != null && score >= best.score) continue;
+
+            best = new WallHit
+            {
+                collider = c,
+                renderer = renderer,
+                bounds = b,
+                outward = normal,
+                span = span,
+                doorPosition = doorway,
+                spanLength = spanLength,
+                thickness = thickness,
+                score = score
+            };
         }
-
-        SwingingDoorScript[] swingingDoors = Resources.FindObjectsOfTypeAll<SwingingDoorScript>();
-        for (int i = 0; i < swingingDoors.Length; i++)
-        {
-            SwingingDoorScript door = swingingDoors[i];
-            if (door == null || !door.gameObject.scene.IsValid()) continue;
-            if (door.gameObject.scene != cafeteria.gameObject.scene) continue;
-
-            EvaluateDoorwayCandidate(
-                cafeteria,
-                bounds,
-                finalDoor,
-                door.transform,
-                checkedObjects,
-                ref bestDoorway,
-                ref bestOutward,
-                ref bestScore);
-        }
-
-        return bestDoorway != null;
+        return best != null;
     }
 
-    private static void EvaluateDoorwayCandidate(
-        Transform cafeteria,
-        Bounds bounds,
-        GameObject finalDoor,
-        Transform candidate,
-        HashSet<int> checkedObjects,
-        ref Transform bestDoorway,
-        ref Vector3 bestOutward,
-        ref float bestScore)
+    private static bool IsWallLike(Collider c, GameObject finalDoor)
     {
-        if (candidate == null) return;
-        int id = candidate.gameObject.GetInstanceID();
-        if (!checkedObjects.Add(id)) return;
+        if (c == null || !c.enabled || c.isTrigger || !c.gameObject.scene.IsValid()) return false;
+        if (c.transform == finalDoor.transform || c.transform.IsChildOf(finalDoor.transform)) return false;
+        if (c.GetComponentInParent<DoorScript>() != null) return false;
+        if (c.GetComponentInParent<SwingingDoorScript>() != null) return false;
 
-        Vector3 local = cafeteria.InverseTransformPoint(candidate.position);
-
-        float dMaxZ = Mathf.Abs(local.z - bounds.max.z);
-        float dMinZ = Mathf.Abs(local.z - bounds.min.z);
-        float dMaxX = Mathf.Abs(local.x - bounds.max.x);
-        float dMinX = Mathf.Abs(local.x - bounds.min.x);
-
-        float boundaryDistance = dMaxZ;
-        Vector3 localOutward = Vector3.forward;
-        bool alongBoundary =
-            local.x >= bounds.min.x - 2f &&
-            local.x <= bounds.max.x + 2f;
-
-        if (dMinZ < boundaryDistance)
-        {
-            boundaryDistance = dMinZ;
-            localOutward = Vector3.back;
-            alongBoundary =
-                local.x >= bounds.min.x - 2f &&
-                local.x <= bounds.max.x + 2f;
-        }
-
-        if (dMaxX < boundaryDistance)
-        {
-            boundaryDistance = dMaxX;
-            localOutward = Vector3.right;
-            alongBoundary =
-                local.z >= bounds.min.z - 2f &&
-                local.z <= bounds.max.z + 2f;
-        }
-
-        if (dMinX < boundaryDistance)
-        {
-            boundaryDistance = dMinX;
-            localOutward = Vector3.left;
-            alongBoundary =
-                local.z >= bounds.min.z - 2f &&
-                local.z <= bounds.max.z + 2f;
-        }
-
-        if (!alongBoundary || boundaryDistance > MaxBoundaryDistance) return;
-        if (local.y < bounds.min.y - 2f || local.y > bounds.max.y + 3f) return;
-
-        Vector3 outward = cafeteria.TransformDirection(localOutward);
-        outward.y = 0f;
-        if (outward.sqrMagnitude < 0.01f) return;
-        outward.Normalize();
-
-        int obstructionScore = ScoreRoomSpace(candidate.position, outward, candidate.gameObject, finalDoor);
-        float oldDoorDistance = Vector3.Distance(candidate.position, finalDoor.transform.position);
-
-        float score =
-            boundaryDistance * 20f +
-            obstructionScore * 30f +
-            oldDoorDistance * 0.15f;
-
-        if (score >= bestScore) return;
-
-        bestScore = score;
-        bestDoorway = candidate;
-        bestOutward = outward;
+        string n = c.gameObject.name.ToLowerInvariant();
+        if (n.Contains("floor") || n.Contains("ground") || n.Contains("ceiling") || n.Contains("door") || n.Contains("table") || n.Contains("chair") || n.Contains("desk") || n.Contains("trigger")) return false;
+        return true;
     }
 
-    private static int ScoreRoomSpace(
-        Vector3 doorwayPosition,
-        Vector3 outward,
-        GameObject existingDoor,
-        GameObject finalDoor)
+    private static Renderer FindMatchingRenderer(Collider c, Bounds cb)
     {
-        Quaternion rotation = Quaternion.LookRotation(outward, Vector3.up);
-        Vector3 center =
-            new Vector3(doorwayPosition.x, doorwayPosition.y, doorwayPosition.z) +
-            outward * (RoomStartOffset + RoomLength * 0.5f);
+        Renderer direct = c.GetComponent<Renderer>();
+        if (RendererMatches(direct, cb)) return direct;
+        Renderer[] renderers = c.GetComponentsInChildren<Renderer>(true);
+        Renderer best = null;
+        float bestDistance = float.MaxValue;
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer r = renderers[i];
+            if (!RendererMatches(r, cb)) continue;
+            float d = (r.bounds.center - cb.center).sqrMagnitude;
+            if (d >= bestDistance) continue;
+            bestDistance = d;
+            best = r;
+        }
+        return best;
+    }
 
-        Collider[] overlaps = Physics.OverlapBox(
-            center,
-            new Vector3(RoomWidth * 0.5f, RoomHeight * 0.5f, RoomLength * 0.5f),
-            rotation,
-            ~0,
-            QueryTriggerInteraction.Ignore);
+    private static bool RendererMatches(Renderer r, Bounds cb)
+    {
+        if (r == null || !r.enabled || r.GetComponentInParent<DoorScript>() != null) return false;
+        Bounds rb = r.bounds;
+        if (rb.size.y < 2.5f || !rb.Intersects(cb)) return false;
+        float cSpan = Mathf.Max(cb.size.x, cb.size.z);
+        float rSpan = Mathf.Max(rb.size.x, rb.size.z);
+        if (rSpan > cSpan * 2.5f + 1f) return false;
+        if (rb.size.y > cb.size.y * 2f + 1f) return false;
+        return Horizontal(rb.center - cb.center).magnitude <= cSpan * 0.75f + 1f;
+    }
 
+    private static int ScoreRoomSpace(Vector3 doorway, Vector3 outward, Collider selectedWall, GameObject finalDoor)
+    {
+        Quaternion rot = Quaternion.LookRotation(outward, Vector3.up);
+        Vector3 floorBase = doorway - Vector3.up * (OpeningHeight * 0.5f);
+        Vector3 center = floorBase + Vector3.up * (RoomHeight * 0.5f) + outward * (RoomStartOffset + RoomLength * 0.5f);
+        Collider[] overlaps = Physics.OverlapBox(center, new Vector3(RoomWidth * 0.5f, RoomHeight * 0.5f, RoomLength * 0.5f), rot, ~0, QueryTriggerInteraction.Ignore);
         int score = 0;
         for (int i = 0; i < overlaps.Length; i++)
         {
-            Collider overlap = overlaps[i];
-            if (overlap == null) continue;
-
-            if (overlap.transform == existingDoor.transform ||
-                overlap.transform.IsChildOf(existingDoor.transform) ||
-                overlap.transform == finalDoor.transform ||
-                overlap.transform.IsChildOf(finalDoor.transform))
-            {
-                continue;
-            }
-
-            string name = overlap.gameObject.name.ToLowerInvariant();
-            if (name.Contains("floor") || name.Contains("ground")) continue;
-
-            score += overlap.bounds.size.y >= 2.2f ? 3 : 1;
+            Collider o = overlaps[i];
+            if (o == null || o == selectedWall) continue;
+            if (o.transform == finalDoor.transform || o.transform.IsChildOf(finalDoor.transform)) continue;
+            string n = o.gameObject.name.ToLowerInvariant();
+            if (n.Contains("floor") || n.Contains("ground") || n.Contains("phase 2 narrow room")) continue;
+            score += o.bounds.size.y >= 2.2f ? 3 : 1;
         }
-
         return score;
     }
 
-    private static void DisableExistingDoorObject(GameObject doorwayObject)
+    private static bool CarveWall(WallHit wall, float floorY, Transform cafeteria)
     {
-        if (doorwayObject == null) return;
+        Bounds b = wall.bounds;
+        float halfSpan = wall.spanLength * 0.5f;
+        float openingHalf = OpeningWidth * 0.5f;
+        float offset = Vector3.Dot(wall.doorPosition - b.center, wall.span);
+        float openingLeft = offset - openingHalf;
+        float openingRight = offset + openingHalf;
+        float leftLength = openingLeft + halfSpan;
+        float rightLength = halfSpan - openingRight;
+        if (leftLength < MinSide || rightLength < MinSide) return false;
 
-        DoorScript[] normalDoors = doorwayObject.GetComponentsInChildren<DoorScript>(true);
-        for (int i = 0; i < normalDoors.Length; i++)
-        {
-            if (normalDoors[i] != null) normalDoors[i].enabled = false;
-        }
+        float wallTop = b.max.y;
+        float openingTop = Mathf.Min(wallTop, floorY + OpeningHeight);
+        float lintelHeight = wallTop - openingTop;
+        Quaternion rot = Quaternion.LookRotation(wall.outward, Vector3.up);
+        Material material = FirstMaterial(wall.renderer);
+        int layer = wall.collider.gameObject.layer;
 
-        SwingingDoorScript[] swingingDoors = doorwayObject.GetComponentsInChildren<SwingingDoorScript>(true);
-        for (int i = 0; i < swingingDoors.Length; i++)
-        {
-            if (swingingDoors[i] != null) swingingDoors[i].enabled = false;
-        }
+        GameObject oldRoot = GameObject.Find(CutRootName);
+        if (oldRoot != null) Destroy(oldRoot);
+        GameObject root = new GameObject(CutRootName);
+        root.transform.SetParent(cafeteria, true);
 
-        Collider[] colliders = doorwayObject.GetComponentsInChildren<Collider>(true);
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            if (colliders[i] != null) colliders[i].enabled = false;
-        }
+        float centerY = b.min.y + b.size.y * 0.5f;
+        CreatePiece("Final Door Wall - Left", root.transform, b.center + wall.span * (-halfSpan + leftLength * 0.5f) + Vector3.up * (centerY - b.center.y), new Vector3(leftLength, b.size.y, wall.thickness), rot, material, layer);
+        CreatePiece("Final Door Wall - Right", root.transform, b.center + wall.span * (openingRight + rightLength * 0.5f) + Vector3.up * (centerY - b.center.y), new Vector3(rightLength, b.size.y, wall.thickness), rot, material, layer);
 
-        Renderer[] renderers = doorwayObject.GetComponentsInChildren<Renderer>(true);
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            if (renderers[i] != null) renderers[i].enabled = false;
-        }
+        if (lintelHeight > 0.05f)
+            CreatePiece("Final Door Wall - Lintel", root.transform, b.center + wall.span * offset + Vector3.up * ((openingTop + lintelHeight * 0.5f) - b.center.y), new Vector3(OpeningWidth, lintelHeight, wall.thickness), rot, material, layer);
+
+        wall.collider.enabled = false;
+        wall.renderer.enabled = false;
+        return true;
     }
 
-    private static void MoveBetweenDoorFrames(
-        Transform target,
-        Vector3 oldOrigin,
-        Quaternion oldRotation,
-        Vector3 newOrigin,
-        Quaternion newRotation)
+    private static void CreatePiece(string name, Transform parent, Vector3 position, Vector3 scale, Quaternion rotation, Material material, int layer)
     {
-        Quaternion oldInverse = Quaternion.Inverse(oldRotation);
-        Vector3 localPosition = oldInverse * (target.position - oldOrigin);
-        Quaternion localRotation = oldInverse * target.rotation;
+        GameObject piece = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        piece.name = name;
+        piece.transform.SetParent(parent, true);
+        piece.transform.position = position;
+        piece.transform.rotation = rotation;
+        piece.transform.localScale = scale;
+        piece.layer = layer;
+        Renderer r = piece.GetComponent<Renderer>();
+        if (r != null && material != null) r.sharedMaterial = material;
+    }
 
+    private static Material FirstMaterial(Renderer r)
+    {
+        if (r == null) return null;
+        Material[] materials = r.sharedMaterials;
+        for (int i = 0; i < materials.Length; i++) if (materials[i] != null) return materials[i];
+        return r.sharedMaterial;
+    }
+
+    private static void DisableFakeOpening(GameObject passage)
+    {
+        if (passage != null)
+        {
+            Collider[] colliders = passage.GetComponents<Collider>();
+            for (int i = 0; i < colliders.Length; i++) if (colliders[i] != null) colliders[i].enabled = false;
+            CursedDoorwayPassageTrigger oldBypass = passage.GetComponent<CursedDoorwayPassageTrigger>();
+            if (oldBypass != null) oldBypass.enabled = false;
+            CursedFinalDoorwayCollisionBypass newBypass = passage.GetComponent<CursedFinalDoorwayCollisionBypass>();
+            if (newBypass != null) newBypass.enabled = false;
+        }
+        GameObject doorwayVoid = GameObject.Find(VoidName);
+        if (doorwayVoid != null) doorwayVoid.SetActive(false);
+    }
+
+    private static void MoveFrame(Transform target, Vector3 oldOrigin, Quaternion oldRotation, Vector3 newOrigin, Quaternion newRotation)
+    {
+        Quaternion inv = Quaternion.Inverse(oldRotation);
+        Vector3 localPosition = inv * (target.position - oldOrigin);
+        Quaternion localRotation = inv * target.rotation;
         target.position = newOrigin + newRotation * localPosition;
         target.rotation = newRotation * localRotation;
     }
 
-    private static void AlignVisibleBottomToFloor(GameObject door, float floorY)
+    private static void AlignDoorBottom(GameObject door, float floorY)
     {
-        Bounds bounds;
-        if (!TryGetRendererBounds(door, out bounds)) return;
-
-        float correction = floorY - bounds.min.y;
-        door.transform.position += Vector3.up * correction;
+        Bounds b;
+        if (!TryGetRendererBounds(door, out b)) return;
+        door.transform.position += Vector3.up * (floorY - b.min.y);
     }
 
-    private static bool TryGetCafeteriaLocalBounds(
-        Transform cafeteria,
-        GameObject generatedDoor,
-        out Bounds localBounds)
+    private static float DistanceToCafeteriaBoundary(Transform cafeteria, Bounds bounds, Vector3 world)
     {
-        bool initialized = false;
-        localBounds = new Bounds(Vector3.zero, Vector3.zero);
-
-        Renderer[] renderers = cafeteria.GetComponentsInChildren<Renderer>(true);
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            Renderer renderer = renderers[i];
-            if (renderer == null) continue;
-            if (renderer.transform == generatedDoor.transform ||
-                renderer.transform.IsChildOf(generatedDoor.transform))
-            {
-                continue;
-            }
-
-            EncapsulateWorldBounds(cafeteria, renderer.bounds, ref initialized, ref localBounds);
-        }
-
-        if (initialized) return true;
-
-        Collider[] colliders = cafeteria.GetComponentsInChildren<Collider>(true);
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            Collider collider = colliders[i];
-            if (collider == null || collider.isTrigger) continue;
-            if (collider.transform == generatedDoor.transform ||
-                collider.transform.IsChildOf(generatedDoor.transform))
-            {
-                continue;
-            }
-
-            EncapsulateWorldBounds(cafeteria, collider.bounds, ref initialized, ref localBounds);
-        }
-
-        return initialized;
+        Vector3 p = cafeteria.InverseTransformPoint(world);
+        return Mathf.Min(Mathf.Min(Mathf.Abs(p.x - bounds.min.x), Mathf.Abs(p.x - bounds.max.x)), Mathf.Min(Mathf.Abs(p.z - bounds.min.z), Mathf.Abs(p.z - bounds.max.z)));
     }
 
-    private static void EncapsulateWorldBounds(
-        Transform root,
-        Bounds worldBounds,
-        ref bool initialized,
-        ref Bounds localBounds)
+    private static bool TryGetFloorY(GameObject floor, out float y)
     {
-        Vector3 center = worldBounds.center;
-        Vector3 extents = worldBounds.extents;
-
-        for (int x = -1; x <= 1; x += 2)
-        {
-            for (int y = -1; y <= 1; y += 2)
-            {
-                for (int z = -1; z <= 1; z += 2)
-                {
-                    Vector3 worldPoint = center + Vector3.Scale(extents, new Vector3(x, y, z));
-                    Vector3 localPoint = root.InverseTransformPoint(worldPoint);
-
-                    if (!initialized)
-                    {
-                        localBounds = new Bounds(localPoint, Vector3.zero);
-                        initialized = true;
-                    }
-                    else
-                    {
-                        localBounds.Encapsulate(localPoint);
-                    }
-                }
-            }
-        }
-    }
-
-    private static bool TryGetFloorSurfaceY(GameObject roomFloor, out float floorY)
-    {
-        Collider collider = roomFloor.GetComponent<Collider>();
-        if (collider != null)
-        {
-            floorY = collider.bounds.max.y;
-            return true;
-        }
-
-        Renderer renderer = roomFloor.GetComponent<Renderer>();
-        if (renderer != null)
-        {
-            floorY = renderer.bounds.max.y;
-            return true;
-        }
-
-        floorY = 0f;
+        Collider c = floor.GetComponent<Collider>();
+        if (c != null) { y = c.bounds.max.y; return true; }
+        Renderer r = floor.GetComponent<Renderer>();
+        if (r != null) { y = r.bounds.max.y; return true; }
+        y = 0f;
         return false;
     }
 
-    private static bool TryGetRendererBounds(GameObject root, out Bounds bounds)
+    private static bool TryGetLocalBounds(Transform root, GameObject ignored, out Bounds localBounds)
+    {
+        bool initialized = false;
+        localBounds = new Bounds(Vector3.zero, Vector3.zero);
+        Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer r = renderers[i];
+            if (r == null || r.transform == ignored.transform || r.transform.IsChildOf(ignored.transform)) continue;
+            string n = r.gameObject.name.ToLowerInvariant();
+            if (n.Contains("phase 2 narrow room") || n.Contains("cafeteria phase 2")) continue;
+            Encapsulate(root, r.bounds, ref initialized, ref localBounds);
+        }
+        return initialized;
+    }
+
+    private static void Encapsulate(Transform root, Bounds world, ref bool initialized, ref Bounds local)
+    {
+        Vector3 c = world.center;
+        Vector3 e = world.extents;
+        for (int x = -1; x <= 1; x += 2)
+        for (int y = -1; y <= 1; y += 2)
+        for (int z = -1; z <= 1; z += 2)
+        {
+            Vector3 p = root.InverseTransformPoint(c + Vector3.Scale(e, new Vector3(x, y, z)));
+            if (!initialized) { local = new Bounds(p, Vector3.zero); initialized = true; }
+            else local.Encapsulate(p);
+        }
+    }
+
+    private static bool TryGetRendererBounds(GameObject root, out Bounds b)
     {
         Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
         bool initialized = false;
-        bounds = new Bounds(root.transform.position, Vector3.zero);
-
+        b = new Bounds(root.transform.position, Vector3.zero);
         for (int i = 0; i < renderers.Length; i++)
         {
-            Renderer renderer = renderers[i];
-            if (renderer == null || !renderer.enabled) continue;
-
-            if (!initialized)
-            {
-                bounds = renderer.bounds;
-                initialized = true;
-            }
-            else
-            {
-                bounds.Encapsulate(renderer.bounds);
-            }
+            Renderer r = renderers[i];
+            if (r == null || !r.enabled) continue;
+            if (!initialized) { b = r.bounds; initialized = true; }
+            else b.Encapsulate(r.bounds);
         }
-
         return initialized;
     }
+
+    private static Vector3 Horizontal(Vector3 v) { v.y = 0f; return v; }
 
     private static Transform FindSceneTransform(string objectName)
     {
         Transform[] transforms = Resources.FindObjectsOfTypeAll<Transform>();
         for (int i = 0; i < transforms.Length; i++)
         {
-            Transform current = transforms[i];
-            if (current == null || !current.gameObject.scene.IsValid()) continue;
-            if (current.name == objectName) return current;
+            Transform t = transforms[i];
+            if (t != null && t.gameObject.scene.IsValid() && t.name == objectName) return t;
         }
-
         return null;
     }
 }
 
+// Kept so old runtime references remain loadable. The solid-wall cut does not require a collision-bypass component anymore.
 public class CursedFinalDoorwayCollisionBypass : MonoBehaviour
 {
-    public void Configure(
-        Transform doorTransform,
-        Collider[] wallBlockers,
-        float width,
-        float height,
-        float depth)
-    {
-    }
+    public void Configure(Transform doorTransform, Collider[] wallBlockers, float width, float height, float depth) { }
 }
