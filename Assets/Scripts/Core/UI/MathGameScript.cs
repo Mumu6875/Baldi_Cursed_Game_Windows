@@ -269,26 +269,28 @@ public class MathGameScript : MonoBehaviour
         questionText2.text = string.Empty;
         questionText3.text = string.Empty;
 
-        GameObject root = mathGame != null ? mathGame : gameObject;
-        if (root.transform.Find("Phase 2 Final Notebook Message") != null) return;
+        if (questionText == null || questionText.transform.parent == null) return;
+        if (questionText.transform.parent.Find("Phase 2 Final Notebook Message") != null) return;
 
         GameObject messageObject = new GameObject("Phase 2 Final Notebook Message", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        messageObject.transform.SetParent(root.transform, false);
+        messageObject.transform.SetParent(questionText.transform.parent, false);
         messageObject.transform.SetAsLastSibling();
 
         RectTransform rect = messageObject.GetComponent<RectTransform>();
-        // Position the message inside the cursed Think Pad's upper LCD panel.
-        rect.anchorMin = new Vector2(0.20f, 0.44f);
-        rect.anchorMax = new Vector2(0.71f, 0.86f);
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = new Vector2(12f, 12f);
+        rect.offsetMax = new Vector2(-12f, -12f);
 
         TextMeshProUGUI message = messageObject.GetComponent<TextMeshProUGUI>();
         message.font = questionText.font;
-        message.fontSize = 22f;
+        message.fontSize = questionText.fontSize;
         message.enableAutoSizing = true;
         message.fontSizeMin = 12f;
-        message.fontSizeMax = 22f;
+        message.fontSizeMax = questionText.fontSize;
+        message.characterSpacing = questionText.characterSpacing;
+        message.wordSpacing = questionText.wordSpacing;
+        message.lineSpacing = questionText.lineSpacing;
         message.textWrappingMode = TextWrappingModes.Normal;
         message.alignment = TextAlignmentOptions.Center;
         message.color = Color.red;

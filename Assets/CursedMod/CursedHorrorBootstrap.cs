@@ -606,23 +606,6 @@ public static class CursedThinkPadInstaller
         GameObject root = math.mathGame != null ? math.mathGame : math.gameObject;
         if (root.transform.Find("Cursed Think Pad Skin") != null) return;
 
-        // The cursed artwork already contains its own ENTER ANSWER label.
-        // Remove only the stock placeholder layer while preserving the live
-        // TMP input text that displays the player's numeric answer.
-        if (math.playerAnswer != null && math.playerAnswer.placeholder != null)
-        {
-            math.playerAnswer.placeholder.gameObject.SetActive(false);
-        }
-
-        // The TMP input field itself also owns the stock white background.
-        // Disable only that graphic in horror mode; keep the input field and
-        // its live answer text active so entered numbers remain visible.
-        if (math.playerAnswer != null)
-        {
-            Image stockAnswerBackground = math.playerAnswer.GetComponent<Image>();
-            if (stockAnswerBackground != null) stockAnswerBackground.enabled = false;
-        }
-
         // The stock YCTP image is opaque around its transparent display cutouts.
         // Hide only that background graphic; its keypad children remain active.
         Transform stockThinkPad = root.transform.Find("YCTP");
@@ -641,6 +624,18 @@ public static class CursedThinkPadInstaller
         if (stockBackground != null) stockBackground.enabled = false;
         Transform stockButtons = stockThinkPad.Find("Buttons");
         if (stockButtons != null) stockButtons.gameObject.SetActive(false);
+
+        RectTransform questionPanelRect = math.questionText != null
+            ? math.questionText.transform.parent as RectTransform
+            : null;
+        RectTransform answerPanelRect = math.playerAnswer != null
+            ? math.playerAnswer.GetComponent<RectTransform>()
+            : null;
+        if (questionPanelRect == null || answerPanelRect == null)
+        {
+            Debug.LogError("Normal Think Pad question or answer panel could not be found.");
+            return;
+        }
 
         GameObject skin = new GameObject("Cursed Think Pad Skin", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
         skin.transform.SetParent(root.transform, false);
@@ -662,6 +657,38 @@ public static class CursedThinkPadInstaller
         image.texture = texture;
         image.color = new Color(0.82f, 0.82f, 0.82f, 1f);
         image.raycastTarget = false;
+
+        GameObject uiLayer = new GameObject("Cursed Think Pad UI", typeof(RectTransform));
+        uiLayer.transform.SetParent(root.transform, false);
+        RectTransform uiRect = uiLayer.GetComponent<RectTransform>();
+        CopyRect(stockRect, uiRect);
+        uiLayer.transform.SetAsLastSibling();
+
+        PlacePanelFromPixels(uiLayer.transform, "Question Panel", questionPanelRect, 462f, 333f, 997f, 570f);
+        PlacePanelFromPixels(uiLayer.transform, "Answer Panel", answerPanelRect, 562f, 643f, 997f, 802f);
+
+        Image stockQuestionBackground = questionPanelRect.GetComponent<Image>();
+        if (stockQuestionBackground != null)
+        {
+            stockQuestionBackground.enabled = true;
+            stockQuestionBackground.color = Color.white;
+            stockQuestionBackground.raycastTarget = false;
+        }
+
+        Image stockAnswerBackground = math.playerAnswer.GetComponent<Image>();
+        if (stockAnswerBackground != null)
+        {
+            stockAnswerBackground.enabled = true;
+            stockAnswerBackground.color = Color.white;
+        }
+        if (math.playerAnswer.placeholder != null)
+        {
+            math.playerAnswer.placeholder.gameObject.SetActive(false);
+        }
+        if (math.playerAnswer.textComponent != null)
+        {
+            math.playerAnswer.textComponent.color = Color.black;
+        }
 
         AlignResultMarks(math, root.transform);
 
@@ -698,6 +725,23 @@ public static class CursedThinkPadInstaller
         destination.sizeDelta = source.sizeDelta;
         destination.localRotation = source.localRotation;
         destination.localScale = source.localScale;
+    }
+
+    private static void PlacePanelFromPixels(Transform parent, string panelName, RectTransform panel, float left, float top, float right, float bottom)
+    {
+        if (panel == null)
+        {
+            Debug.LogError("Cursed Think Pad " + panelName + " is missing.");
+            return;
+        }
+
+        panel.SetParent(parent, false);
+        panel.anchorMin = new Vector2(left / ArtworkWidth, 1f - bottom / ArtworkHeight);
+        panel.anchorMax = new Vector2(right / ArtworkWidth, 1f - top / ArtworkHeight);
+        panel.offsetMin = Vector2.zero;
+        panel.offsetMax = Vector2.zero;
+        panel.localRotation = Quaternion.identity;
+        panel.localScale = Vector3.one;
     }
 
     private static void AlignResultMarks(MathGameScript math, Transform root)
