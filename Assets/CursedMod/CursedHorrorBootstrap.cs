@@ -690,7 +690,7 @@ public static class CursedThinkPadInstaller
             math.playerAnswer.textComponent.color = Color.black;
         }
 
-        AlignResultMarks(math, root.transform);
+        AlignResultMarks(math, uiRect);
 
         // Build fresh hit regions from the exact pixel bounds in the current
         // 1448x1086 cursed artwork. These scale together with the skin on every
@@ -744,22 +744,21 @@ public static class CursedThinkPadInstaller
         panel.localScale = Vector3.one;
     }
 
-    private static void AlignResultMarks(MathGameScript math, Transform root)
+    private static void AlignResultMarks(MathGameScript math, RectTransform uiRect)
     {
         if (math.results == null || math.results.Length == 0) return;
 
-        // The stock result marks were positioned for the original Think Pad.
-        // Reparent them to a full-screen layer and anchor their centres to the
-        // three green status windows painted into the 1536x1024 cursed skin.
-        Vector2[] markAnchors =
+        // Anchor each result to the measured centre of its status window in
+        // the 1448x1086 cursed artwork.
+        Vector2[] markPixels =
         {
-            new Vector2(0.1123f, 0.8369f),
-            new Vector2(0.1123f, 0.6802f),
-            new Vector2(0.1123f, 0.5269f)
+            new Vector2(362.5f, 365f),
+            new Vector2(353f, 467f),
+            new Vector2(348f, 571.5f)
         };
 
         GameObject layer = new GameObject("Cursed Result Marks", typeof(RectTransform));
-        layer.transform.SetParent(root, false);
+        layer.transform.SetParent(uiRect, false);
         RectTransform layerRect = layer.GetComponent<RectTransform>();
         layerRect.anchorMin = Vector2.zero;
         layerRect.anchorMax = Vector2.one;
@@ -767,7 +766,7 @@ public static class CursedThinkPadInstaller
         layerRect.offsetMax = Vector2.zero;
         layer.transform.SetAsLastSibling();
 
-        int count = Mathf.Min(math.results.Length, markAnchors.Length);
+        int count = Mathf.Min(math.results.Length, markPixels.Length);
         for (int i = 0; i < count; i++)
         {
             RawImage result = math.results[i];
@@ -775,8 +774,11 @@ public static class CursedThinkPadInstaller
 
             RectTransform resultRect = result.rectTransform;
             resultRect.SetParent(layerRect, false);
-            resultRect.anchorMin = markAnchors[i];
-            resultRect.anchorMax = markAnchors[i];
+            Vector2 markAnchor = new Vector2(
+                markPixels[i].x / ArtworkWidth,
+                1f - markPixels[i].y / ArtworkHeight);
+            resultRect.anchorMin = markAnchor;
+            resultRect.anchorMax = markAnchor;
             resultRect.pivot = new Vector2(0.5f, 0.5f);
             resultRect.anchoredPosition = Vector2.zero;
             resultRect.sizeDelta = new Vector2(53f, 53f);
