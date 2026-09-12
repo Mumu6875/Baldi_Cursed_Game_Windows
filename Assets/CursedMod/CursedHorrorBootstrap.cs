@@ -626,13 +626,21 @@ public static class CursedThinkPadInstaller
         // The stock YCTP image is opaque around its transparent display cutouts.
         // Hide only that background graphic; its keypad children remain active.
         Transform stockThinkPad = root.transform.Find("YCTP");
-        if (stockThinkPad != null)
+        if (stockThinkPad == null)
         {
-            RawImage stockBackground = stockThinkPad.GetComponent<RawImage>();
-            if (stockBackground != null) stockBackground.enabled = false;
-            Transform stockButtons = stockThinkPad.Find("Buttons");
-            if (stockButtons != null) stockButtons.gameObject.SetActive(false);
+            Debug.LogError("Normal YCTP could not be found.");
+            return;
         }
+        RectTransform stockRect = stockThinkPad.GetComponent<RectTransform>();
+        if (stockRect == null)
+        {
+            Debug.LogError("Normal YCTP RectTransform could not be found.");
+            return;
+        }
+        RawImage stockBackground = stockThinkPad.GetComponent<RawImage>();
+        if (stockBackground != null) stockBackground.enabled = false;
+        Transform stockButtons = stockThinkPad.Find("Buttons");
+        if (stockButtons != null) stockButtons.gameObject.SetActive(false);
 
         GameObject skin = new GameObject("Cursed Think Pad Skin", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
         skin.transform.SetParent(root.transform, false);
@@ -649,10 +657,7 @@ public static class CursedThinkPadInstaller
         }
         skin.transform.SetSiblingIndex(Mathf.Clamp(foregroundIndex, 0, root.transform.childCount - 1));
         RectTransform rect = skin.GetComponent<RectTransform>();
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
+        CopyRect(stockRect, rect);
         RawImage image = skin.GetComponent<RawImage>();
         image.texture = texture;
         image.color = new Color(0.82f, 0.82f, 0.82f, 1f);
@@ -666,10 +671,7 @@ public static class CursedThinkPadInstaller
         GameObject controls = new GameObject("Cursed Think Pad Controls", typeof(RectTransform));
         controls.transform.SetParent(root.transform, false);
         RectTransform controlsRect = controls.GetComponent<RectTransform>();
-        controlsRect.anchorMin = Vector2.zero;
-        controlsRect.anchorMax = Vector2.one;
-        controlsRect.offsetMin = Vector2.zero;
-        controlsRect.offsetMax = Vector2.zero;
+        CopyRect(stockRect, controlsRect);
         controls.transform.SetAsLastSibling();
 
         CreateKeyFromPixels(controls.transform, "7", 1090f, 296f, 1173f, 378f, math, 7, false);
@@ -685,6 +687,17 @@ public static class CursedThinkPadInstaller
         CreateKeyFromPixels(controls.transform, "0", 1181f, 578f, 1264f, 661f, math, 0, false);
         CreateKeyFromPixels(controls.transform, "Minus", 1270f, 579f, 1352f, 663f, math, -1, false);
         CreateKeyFromPixels(controls.transform, "OK", 1105f, 665f, 1336f, 895f, math, 0, true);
+    }
+
+    private static void CopyRect(RectTransform source, RectTransform destination)
+    {
+        destination.anchorMin = source.anchorMin;
+        destination.anchorMax = source.anchorMax;
+        destination.pivot = source.pivot;
+        destination.anchoredPosition = source.anchoredPosition;
+        destination.sizeDelta = source.sizeDelta;
+        destination.localRotation = source.localRotation;
+        destination.localScale = source.localScale;
     }
 
     private static void AlignResultMarks(MathGameScript math, Transform root)

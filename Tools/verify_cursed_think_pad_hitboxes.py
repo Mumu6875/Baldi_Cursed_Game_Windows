@@ -8,6 +8,10 @@ import struct
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "Assets/CursedMod/CursedHorrorBootstrap.cs"
 ARTWORK = ROOT / "Assets/Resources/CursedMod/CursedThinkPad.png"
+MATH_GAME_PREFABS = {
+    ROOT / "Assets/PrefabInstance/MathGame.prefab": (800.0, 600.0),
+    ROOT / "Assets/PrefabInstance/MathGameNoKeypad.prefab": (800.0, 800.0),
+}
 
 
 def png_size(path):
@@ -21,6 +25,30 @@ def png_size(path):
 width, height = png_size(ARTWORK)
 assert (width, height) == (1448, 1086), (width, height)
 code = SOURCE.read_text(encoding="utf-8-sig")
+
+for prefab_path, expected_size in MATH_GAME_PREFABS.items():
+    prefab = prefab_path.read_text()
+    yctp = re.search(
+        r"m_Name: YCTP\n.*?--- !u!224 &\d+\nRectTransform:.*?"
+        r"m_SizeDelta: \{x: ([\d.]+), y: ([\d.]+)\}",
+        prefab,
+        re.DOTALL,
+    )
+    assert yctp is not None, f"{prefab_path.name} has no YCTP RectTransform"
+    assert tuple(map(float, yctp.groups())) == expected_size, (
+        prefab_path.name,
+        yctp.groups(),
+    )
+
+assert "RectTransform stockRect = stockThinkPad.GetComponent<RectTransform>();" in code, (
+    "Cursed layout does not read the normal YCTP RectTransform"
+)
+assert "CopyRect(stockRect, rect);" in code, (
+    "Cursed skin does not match the normal YCTP rectangle"
+)
+assert "CopyRect(stockRect, controlsRect);" in code, (
+    "Cursed hitbox container does not match the normal YCTP rectangle"
+)
 
 pixel_pattern = re.compile(
     r'CreateKeyFromPixels\(controls\.transform, "([^"]+)", '
@@ -94,5 +122,6 @@ for index, first in enumerate(names):
 
 assert not failures, "\n" + "\n".join(failures)
 print("PASS: PNG is complete and 1448x1086")
+print("PASS: cursed skin and controls match the active prefab's normal YCTP rectangle")
 print("PASS: all 13 visible keys map to exactly one matching action")
 print("PASS: every visible key is covered and no hitboxes overlap")
