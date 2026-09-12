@@ -6,15 +6,6 @@ public class BaldiScript : MonoBehaviour
 	private void Start()
 	{
 		baldiAudio = GetComponent<AudioSource>(); //Get The Baldi Audio Source(Used mostly for the slap sound)
-		AudioClip replacementSlap = Resources.Load<AudioClip>("CursedMod/BaldiRulerLoud");
-		if (replacementSlap != null)
-		{
-			slap = replacementSlap;
-		}
-		else
-		{
-			Debug.LogError("Replacement Baldi ruler sound could not be loaded.");
-		}
 		if (baldiAudio != null)
 		{
 			// The supplied recording is peak-normalized in the imported asset.

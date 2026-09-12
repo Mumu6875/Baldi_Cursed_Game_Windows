@@ -112,7 +112,7 @@ public static class CursedWindowsSetup
 public sealed class CursedBuildValidation : IPreprocessBuildWithReport
 {
     private const string WarningAssetPath = "Assets/Resources/CursedMod/PiracyWarningPhase1.jpg";
-    private const string RulerAudioAssetPath = "Assets/Resources/CursedMod/BaldiRulerLoud.ogg";
+    private const string RulerAudioAssetPath = "Assets/AudioClip/Characters/Baldi/Sounds/BAL_Slap.wav";
     private const string HelpMeExitAssetPath = "Assets/Resources/CursedMod/HelpMeExitSign.png";
     private const string Phase2SchoolRulesAssetPath = "Assets/Resources/CursedMod/SchoolRulesPosterPhase2.png";
     private const string Phase2CompletionAssetPath = "Assets/Resources/CursedMod/Phase2Completion.png";
@@ -211,15 +211,15 @@ public sealed class CursedBuildValidation : IPreprocessBuildWithReport
 
         if (!File.Exists(RulerAudioAssetPath))
         {
-            throw new BuildFailedException("Required replacement Baldi ruler sound is missing: " + RulerAudioAssetPath);
+            throw new BuildFailedException("Required direct Baldi ruler sound is missing: " + RulerAudioAssetPath);
         }
         AssetDatabase.ImportAsset(RulerAudioAssetPath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
         AudioClip rulerAudio = AssetDatabase.LoadAssetAtPath<AudioClip>(RulerAudioAssetPath);
         if (rulerAudio == null || rulerAudio.length < 0.5f || rulerAudio.length > 1.0f || rulerAudio.channels != 1)
         {
-            throw new BuildFailedException("Replacement Baldi ruler sound must be a 0.5-1.0 second mono AudioClip: " + RulerAudioAssetPath);
+            throw new BuildFailedException("Direct Baldi ruler sound must be a 0.5-1.0 second mono AudioClip: " + RulerAudioAssetPath);
         }
-        Debug.Log("Verified replacement Baldi ruler sound: " + rulerAudio.length.ToString("F2") + " seconds, " + rulerAudio.frequency + " Hz.");
+        Debug.Log("Verified direct Baldi ruler sound: " + rulerAudio.length.ToString("F2") + " seconds, " + rulerAudio.frequency + " Hz.");
     }
 
     private static Texture2D ImportTextureWithoutNpotScaling(string assetPath)
