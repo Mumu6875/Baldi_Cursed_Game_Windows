@@ -660,8 +660,8 @@ public static class CursedThinkPadInstaller
 
         AlignResultMarks(math, root.transform);
 
-        // Build fresh hit regions from the exact normalized pixel bounds in the
-        // 1536x1024 cursed artwork. These scale together with the skin on every
+        // Build fresh hit regions from the exact pixel bounds in the current
+        // 1448x1086 cursed artwork. These scale together with the skin on every
         // aspect ratio and bypass the differently spaced stock keypad entirely.
         GameObject controls = new GameObject("Cursed Think Pad Controls", typeof(RectTransform));
         controls.transform.SetParent(root.transform, false);
@@ -672,18 +672,19 @@ public static class CursedThinkPadInstaller
         controlsRect.offsetMax = Vector2.zero;
         controls.transform.SetAsLastSibling();
 
-        CreateKey(controls.transform, "7", new Vector2(0.7507f, 0.7861f), new Vector2(0.8125f, 0.8896f), math, 7, false);
-        CreateKey(controls.transform, "8", new Vector2(0.8223f, 0.7852f), new Vector2(0.8841f, 0.8877f), math, 8, false);
-        CreateKey(controls.transform, "9", new Vector2(0.8913f, 0.7871f), new Vector2(0.9518f, 0.8867f), math, 9, false);
-        CreateKey(controls.transform, "4", new Vector2(0.7500f, 0.6689f), new Vector2(0.8125f, 0.7725f), math, 4, false);
-        CreateKey(controls.transform, "5", new Vector2(0.8216f, 0.6699f), new Vector2(0.8828f, 0.7705f), math, 5, false);
-        CreateKey(controls.transform, "6", new Vector2(0.8919f, 0.6709f), new Vector2(0.9518f, 0.7705f), math, 6, false);
-        CreateKey(controls.transform, "1", new Vector2(0.7520f, 0.5537f), new Vector2(0.8118f, 0.6543f), math, 1, false);
-        CreateKey(controls.transform, "2", new Vector2(0.8216f, 0.5537f), new Vector2(0.8835f, 0.6543f), math, 2, false);
-        CreateKey(controls.transform, "3", new Vector2(0.8906f, 0.5527f), new Vector2(0.9518f, 0.6543f), math, 3, false);
-        CreateKey(controls.transform, "0", new Vector2(0.7513f, 0.4346f), new Vector2(0.8828f, 0.5400f), math, 0, false);
-        CreateKey(controls.transform, "Minus", new Vector2(0.8919f, 0.4307f), new Vector2(0.9518f, 0.5381f), math, -1, false);
-        CreateKey(controls.transform, "OK", new Vector2(0.7565f, 0.1152f), new Vector2(0.9303f, 0.3838f), math, 0, true);
+        CreateKeyFromPixels(controls.transform, "7", 1090f, 296f, 1173f, 378f, math, 7, false);
+        CreateKeyFromPixels(controls.transform, "8", 1180f, 296f, 1264f, 379f, math, 8, false);
+        CreateKeyFromPixels(controls.transform, "9", 1273f, 297f, 1353f, 381f, math, 9, false);
+        CreateKeyFromPixels(controls.transform, "4", 1091f, 389f, 1173f, 471f, math, 4, false);
+        CreateKeyFromPixels(controls.transform, "5", 1181f, 389f, 1264f, 471f, math, 5, false);
+        CreateKeyFromPixels(controls.transform, "6", 1273f, 390f, 1355f, 471f, math, 6, false);
+        CreateKeyFromPixels(controls.transform, "1", 1091f, 481f, 1173f, 562f, math, 1, false);
+        CreateKeyFromPixels(controls.transform, "2", 1181f, 482f, 1264f, 563f, math, 2, false);
+        CreateKeyFromPixels(controls.transform, "3", 1272f, 482f, 1355f, 565f, math, 3, false);
+        CreateKeyFromPixels(controls.transform, "C", 1092f, 576f, 1174f, 660f, math, -2, false);
+        CreateKeyFromPixels(controls.transform, "0", 1181f, 578f, 1264f, 661f, math, 0, false);
+        CreateKeyFromPixels(controls.transform, "Minus", 1270f, 579f, 1352f, 663f, math, -1, false);
+        CreateKeyFromPixels(controls.transform, "OK", 1105f, 665f, 1336f, 895f, math, 0, true);
     }
 
     private static void AlignResultMarks(MathGameScript math, Transform root)
@@ -726,6 +727,16 @@ public static class CursedThinkPadInstaller
             resultRect.localScale = Vector3.one;
             result.raycastTarget = false;
         }
+    }
+
+    private const float ArtworkWidth = 1448f;
+    private const float ArtworkHeight = 1086f;
+
+    private static void CreateKeyFromPixels(Transform parent, string keyName, float left, float top, float right, float bottom, MathGameScript math, int value, bool submit)
+    {
+        Vector2 anchorMin = new Vector2(left / ArtworkWidth, 1f - bottom / ArtworkHeight);
+        Vector2 anchorMax = new Vector2(right / ArtworkWidth, 1f - top / ArtworkHeight);
+        CreateKey(parent, keyName, anchorMin, anchorMax, math, value, submit);
     }
 
     private static void CreateKey(Transform parent, string keyName, Vector2 anchorMin, Vector2 anchorMax, MathGameScript math, int value, bool submit)
