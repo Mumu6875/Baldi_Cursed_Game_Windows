@@ -108,29 +108,32 @@ public sealed class CursedPhase3Screen : MonoBehaviour
         background.color = Color.white;
         background.raycastTarget = false;
 
-        Text prompt = MakeText("Password Prompt", new Vector2(0.306f, 0.225f), new Vector2(0.620f, 0.541f), 54);
-        prompt.text = "Enter the password";
-        prompt.color = new Color(0.78f, 0.015f, 0.015f, 1f);
+        Text prompt = MakeTextFromPixels("Password Prompt", 620f, 480f, 1050f, 660f, 54);
+        prompt.text = "ENTER PASSWORD";
+        prompt.color = Color.white;
 
-        enteredText = MakeText("Entered Password", new Vector2(0.331f, 0.010f), new Vector2(0.616f, 0.170f), 70);
-        enteredText.color = new Color(0.72f, 0.01f, 0.01f, 1f);
+        enteredText = MakeTextFromPixels("Entered Password", 680f, 770f, 1030f, 850f, 70);
+        enteredText.color = Color.white;
         RefreshEnteredText();
 
-        MakeClickArea("Clear Password Top", new Vector2(0.229f, 0.466f), new Vector2(0.281f, 0.548f), ClearPassword);
-        MakeClickArea("Clear Password Middle", new Vector2(0.229f, 0.378f), new Vector2(0.281f, 0.461f), ClearPassword);
-        MakeClickArea("Clear Password Bottom", new Vector2(0.229f, 0.291f), new Vector2(0.281f, 0.374f), ClearPassword);
-        CreateDigitButton(7, new Vector2(0.644f, 0.474f), new Vector2(0.681f, 0.545f));
-        CreateDigitButton(8, new Vector2(0.686f, 0.474f), new Vector2(0.724f, 0.545f));
-        CreateDigitButton(9, new Vector2(0.729f, 0.474f), new Vector2(0.767f, 0.545f));
-        CreateDigitButton(4, new Vector2(0.644f, 0.395f), new Vector2(0.681f, 0.462f));
-        CreateDigitButton(5, new Vector2(0.686f, 0.395f), new Vector2(0.724f, 0.462f));
-        CreateDigitButton(6, new Vector2(0.729f, 0.395f), new Vector2(0.767f, 0.462f));
-        CreateDigitButton(1, new Vector2(0.644f, 0.310f), new Vector2(0.681f, 0.380f));
-        CreateDigitButton(2, new Vector2(0.686f, 0.310f), new Vector2(0.724f, 0.380f));
-        CreateDigitButton(3, new Vector2(0.729f, 0.310f), new Vector2(0.767f, 0.380f));
-        CreateDigitButton(0, new Vector2(0.643f, 0.226f), new Vector2(0.724f, 0.296f));
-        MakeClickArea("Backspace", new Vector2(0.729f, 0.226f), new Vector2(0.767f, 0.296f), Backspace);
-        MakeClickArea("Submit Password", new Vector2(0.644f, 0.015f), new Vector2(0.769f, 0.190f), SubmitPassword);
+        CreateDigitButtonFromPixels(7, 1135f, 430f, 1197f, 497f);
+        CreateDigitButtonFromPixels(8, 1207f, 430f, 1268f, 497f);
+        CreateDigitButtonFromPixels(9, 1278f, 429f, 1340f, 497f);
+        CreateDigitButtonFromPixels(4, 1135f, 508f, 1197f, 574f);
+        CreateDigitButtonFromPixels(5, 1207f, 508f, 1269f, 574f);
+        CreateDigitButtonFromPixels(6, 1279f, 508f, 1342f, 574f);
+        CreateDigitButtonFromPixels(1, 1134f, 585f, 1197f, 651f);
+        CreateDigitButtonFromPixels(2, 1207f, 585f, 1269f, 650f);
+        CreateDigitButtonFromPixels(3, 1279f, 585f, 1343f, 650f);
+        MakeClickAreaFromPixels("Clear Password", 1135f, 663f, 1197f, 730f, ClearPassword);
+        CreateDigitButtonFromPixels(0, 1207f, 663f, 1270f, 730f);
+        MakeClickAreaFromPixels("Backspace", 1279f, 663f, 1342f, 730f, Backspace);
+        MakeClickAreaFromPixels("Submit Password", 1142f, 733f, 1331f, 927f, SubmitPassword);
+    }
+
+    private Text MakeTextFromPixels(string objectName, float left, float top, float right, float bottom, int fontSize)
+    {
+        return MakeText(objectName, PixelAnchorMin(left, bottom), PixelAnchorMax(right, top), fontSize);
     }
 
     private Text MakeText(string objectName, Vector2 anchorMin, Vector2 anchorMax, int fontSize)
@@ -154,10 +157,31 @@ public sealed class CursedPhase3Screen : MonoBehaviour
         return text;
     }
 
-    private void CreateDigitButton(int digit, Vector2 anchorMin, Vector2 anchorMax)
+    private void CreateDigitButtonFromPixels(int digit, float left, float top, float right, float bottom)
     {
         int capturedDigit = digit;
-        MakeClickArea("Digit " + digit, anchorMin, anchorMax, delegate { AddDigit(capturedDigit); });
+        MakeClickAreaFromPixels(
+            "Digit " + digit,
+            left,
+            top,
+            right,
+            bottom,
+            delegate { AddDigit(capturedDigit); });
+    }
+
+    private void MakeClickAreaFromPixels(string objectName, float left, float top, float right, float bottom, UnityAction action)
+    {
+        MakeClickArea(objectName, PixelAnchorMin(left, bottom), PixelAnchorMax(right, top), action);
+    }
+
+    private static Vector2 PixelAnchorMin(float left, float bottom)
+    {
+        return new Vector2(left / 1672f, 1f - bottom / 941f);
+    }
+
+    private static Vector2 PixelAnchorMax(float right, float top)
+    {
+        return new Vector2(right / 1672f, 1f - top / 941f);
     }
 
     private void MakeClickArea(string objectName, Vector2 anchorMin, Vector2 anchorMax, UnityAction action)
