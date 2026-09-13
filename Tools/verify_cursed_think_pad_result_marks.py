@@ -51,16 +51,21 @@ if "layerRect.offsetMin = Vector2.zero;" not in mark_code:
     failures.append("result-mark layer has a nonzero minimum offset")
 if "layerRect.offsetMax = Vector2.zero;" not in mark_code:
     failures.append("result-mark layer has a nonzero maximum offset")
-if "markPixels[i].x / ArtworkWidth" not in mark_code:
-    failures.append("result X position is not converted from artwork pixels")
-if "1f - markPixels[i].y / ArtworkHeight" not in mark_code:
-    failures.append("result Y position does not convert the artwork's top origin")
-if "resultRect.anchorMin = markAnchor;" not in mark_code:
-    failures.append("result minimum anchor does not use the converted center")
-if "resultRect.anchorMax = markAnchor;" not in mark_code:
-    failures.append("result maximum anchor does not use the converted center")
-if "resultRect.anchoredPosition = Vector2.zero;" not in mark_code:
-    failures.append("result mark has a nonzero offset from its center")
+if "stockResultBackground.enabled = false;" not in mark_code:
+    failures.append("the oversized stock ResultBG is still visible")
+
+background_pattern = re.compile(
+    r'CreateResultBackgroundFromPixels\(layerRect, "(\d)", '
+    r'([\d.]+)f, ([\d.]+)f, ([\d.]+)f, ([\d.]+)f\);'
+)
+backgrounds = [
+    tuple(map(float, values))
+    for _, *values in background_pattern.findall(mark_code)
+]
+if backgrounds != window_bounds:
+    failures.append(
+        f"white result backgrounds are {backgrounds!r}, expected {window_bounds!r}"
+    )
 
 
 if pixels != expected_centers:
@@ -72,10 +77,33 @@ else:
         if not (left <= x <= right and top <= y <= bottom):
             failures.append(f"result {index} center {(x, y)} misses its status window")
 
-if "resultRect.sizeDelta = new Vector2(53f, 53f);" not in mark_code:
-    failures.append("normal 53x53 result-mark size was changed")
+if "PlaceResultMarkFromPixels(resultRect, markPixels[i], 48f);" not in mark_code:
+    failures.append("result marks are not constrained to 48 artwork pixels")
+if "resultRect.sizeDelta = new Vector2(53f, 53f);" in mark_code:
+    failures.append("the oversized 53x53 local-unit result mark remains")
+
+mark_layout = re.search(
+    r"private static void PlaceResultMarkFromPixels\(.*?\)\s*\{(.*?)\n    \}",
+    code,
+    re.DOTALL,
+)
+if mark_layout is None:
+    failures.append("artwork-relative result-mark layout helper is missing")
+else:
+    layout_code = mark_layout.group(1)
+    for required in (
+        "(centerPixels.x - halfSize) / ArtworkWidth",
+        "(centerPixels.x + halfSize) / ArtworkWidth",
+        "1f - (centerPixels.y + halfSize) / ArtworkHeight",
+        "1f - (centerPixels.y - halfSize) / ArtworkHeight",
+        "resultRect.offsetMin = Vector2.zero;",
+        "resultRect.offsetMax = Vector2.zero;",
+    ):
+        if required not in layout_code:
+            failures.append(f"result-mark layout is missing: {required}")
 
 assert not failures, "\n" + "\n".join(failures)
 print("PASS: result marks use the cursed Think Pad UI rectangle")
 print("PASS: all three result centers sit inside their artwork windows")
-print("PASS: normal 53x53 result-mark size is preserved")
+print("PASS: stock ResultBG is hidden and three white windows match the artwork")
+print("PASS: result marks are constrained to 48 artwork pixels")

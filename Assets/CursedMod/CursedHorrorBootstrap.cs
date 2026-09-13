@@ -666,6 +666,9 @@ public static class CursedThinkPadInstaller
 
         PlacePanelFromPixels(uiLayer.transform, "Question Panel", questionPanelRect, 462f, 333f, 997f, 570f);
         PlacePanelFromPixels(uiLayer.transform, "Answer Panel", answerPanelRect, 562f, 643f, 997f, 802f);
+        FitQuestionTextToPanel(math.questionText);
+        FitQuestionTextToPanel(math.questionText2);
+        FitQuestionTextToPanel(math.questionText3);
 
         Image stockQuestionBackground = questionPanelRect.GetComponent<Image>();
         if (stockQuestionBackground != null)
@@ -744,9 +747,67 @@ public static class CursedThinkPadInstaller
         panel.localScale = Vector3.one;
     }
 
+    private static void FitQuestionTextToPanel(TMP_Text text)
+    {
+        if (text == null) return;
+
+        RectTransform textRect = text.rectTransform;
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = new Vector2(12f, 12f);
+        textRect.offsetMax = new Vector2(-12f, -12f);
+        textRect.localRotation = Quaternion.identity;
+        textRect.localScale = Vector3.one;
+    }
+
+    private static void CreateResultBackgroundFromPixels(RectTransform parent, string windowName, float left, float top, float right, float bottom)
+    {
+        GameObject backgroundObject = new GameObject(
+            "Cursed Result Background " + windowName,
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        backgroundObject.transform.SetParent(parent, false);
+
+        RectTransform backgroundRect = backgroundObject.GetComponent<RectTransform>();
+        backgroundRect.anchorMin = new Vector2(left / ArtworkWidth, 1f - bottom / ArtworkHeight);
+        backgroundRect.anchorMax = new Vector2(right / ArtworkWidth, 1f - top / ArtworkHeight);
+        backgroundRect.offsetMin = Vector2.zero;
+        backgroundRect.offsetMax = Vector2.zero;
+
+        Image background = backgroundObject.GetComponent<Image>();
+        background.color = Color.white;
+        background.raycastTarget = false;
+    }
+
+    private static void PlaceResultMarkFromPixels(RectTransform resultRect, Vector2 centerPixels, float sizePixels)
+    {
+        float halfSize = sizePixels * 0.5f;
+        resultRect.anchorMin = new Vector2(
+            (centerPixels.x - halfSize) / ArtworkWidth,
+            1f - (centerPixels.y + halfSize) / ArtworkHeight);
+        resultRect.anchorMax = new Vector2(
+            (centerPixels.x + halfSize) / ArtworkWidth,
+            1f - (centerPixels.y - halfSize) / ArtworkHeight);
+        resultRect.offsetMin = Vector2.zero;
+        resultRect.offsetMax = Vector2.zero;
+        resultRect.localRotation = Quaternion.identity;
+        resultRect.localScale = Vector3.one;
+    }
+
     private static void AlignResultMarks(MathGameScript math, RectTransform uiRect)
     {
         if (math.results == null || math.results.Length == 0) return;
+
+        Transform stockResultPanel = math.results[0] != null ? math.results[0].transform.parent : null;
+        Image stockResultBackground = stockResultPanel != null
+            ? stockResultPanel.GetComponent<Image>()
+            : null;
+        if (stockResultBackground != null)
+        {
+            stockResultBackground.enabled = false;
+            stockResultBackground.raycastTarget = false;
+        }
 
         // Anchor each result to the measured centre of its status window in
         // the 1448x1086 cursed artwork.
@@ -766,6 +827,10 @@ public static class CursedThinkPadInstaller
         layerRect.offsetMax = Vector2.zero;
         layer.transform.SetAsLastSibling();
 
+        CreateResultBackgroundFromPixels(layerRect, "1", 316f, 333f, 409f, 397f);
+        CreateResultBackgroundFromPixels(layerRect, "2", 313f, 439f, 393f, 495f);
+        CreateResultBackgroundFromPixels(layerRect, "3", 311f, 545f, 385f, 598f);
+
         int count = Mathf.Min(math.results.Length, markPixels.Length);
         for (int i = 0; i < count; i++)
         {
@@ -774,16 +839,8 @@ public static class CursedThinkPadInstaller
 
             RectTransform resultRect = result.rectTransform;
             resultRect.SetParent(layerRect, false);
-            Vector2 markAnchor = new Vector2(
-                markPixels[i].x / ArtworkWidth,
-                1f - markPixels[i].y / ArtworkHeight);
-            resultRect.anchorMin = markAnchor;
-            resultRect.anchorMax = markAnchor;
             resultRect.pivot = new Vector2(0.5f, 0.5f);
-            resultRect.anchoredPosition = Vector2.zero;
-            resultRect.sizeDelta = new Vector2(53f, 53f);
-            resultRect.localRotation = Quaternion.identity;
-            resultRect.localScale = Vector3.one;
+            PlaceResultMarkFromPixels(resultRect, markPixels[i], 48f);
             result.raycastTarget = false;
         }
     }
