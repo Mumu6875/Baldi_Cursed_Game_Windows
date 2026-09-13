@@ -63,8 +63,6 @@ public static class ShellItem
         }
 
         CreatePickup(controller, room, icon, pickupBounds);
-        Debug.Log("Shell installed in faculty room ID " + room.RoomId +
-            " at " + pickupBounds.center + " (item ID " + ItemId + ").", controller);
     }
 
     // Shared by runtime installation and the scene build validator.

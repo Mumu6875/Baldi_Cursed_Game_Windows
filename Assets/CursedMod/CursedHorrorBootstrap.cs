@@ -250,7 +250,6 @@ public class CursedHorrorBootstrap : MonoBehaviour
             return;
         }
 
-        Debug.Log("Phase 2 cursed Story applied to the visible How to Play panel: " + patched);
     }
 
     private static void CopyRect(RectTransform source, RectTransform destination)
@@ -283,7 +282,6 @@ public class CursedHorrorBootstrap : MonoBehaviour
             return;
         }
 
-        int patched = 0;
         SpriteRenderer[] renderers = Resources.FindObjectsOfTypeAll<SpriteRenderer>();
         for (int i = 0; i < renderers.Length; i++)
         {
@@ -291,9 +289,7 @@ public class CursedHorrorBootstrap : MonoBehaviour
             if (!renderer.gameObject.scene.IsValid()) continue;
             if (renderer.gameObject.name != "ExitSignSprite") continue;
             renderer.sprite = helpMeExitSprite;
-            patched++;
         }
-        Debug.Log("Phase 2 HELP ME exit signs applied: " + patched);
     }
 
     private void PatchPhase2SchoolRulesPosters()
@@ -304,7 +300,6 @@ public class CursedHorrorBootstrap : MonoBehaviour
             return;
         }
 
-        int patched = 0;
         Renderer[] renderers = Resources.FindObjectsOfTypeAll<Renderer>();
         for (int i = 0; i < renderers.Length; i++)
         {
@@ -338,12 +333,9 @@ public class CursedHorrorBootstrap : MonoBehaviour
                 }
 
                 material.mainTexture = phase2SchoolRulesTexture;
-                patched++;
             }
             renderer.materials = materials;
         }
-
-        Debug.Log("Phase 2 school rules posters applied: " + patched);
     }
 
     private void PatchPhase2MathBlackboards()
@@ -354,7 +346,6 @@ public class CursedHorrorBootstrap : MonoBehaviour
             return;
         }
 
-        int patched = 0;
         Renderer[] renderers = Resources.FindObjectsOfTypeAll<Renderer>();
         for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
         {
@@ -377,12 +368,9 @@ public class CursedHorrorBootstrap : MonoBehaviour
             {
                 if (!IsMathBlackboardMaterial(sharedMaterials[materialIndex])) continue;
                 materials[materialIndex].mainTexture = phase2MathBlackboardTexture;
-                patched++;
             }
             renderer.materials = materials;
         }
-
-        Debug.Log("Phase 2 cursed Math blackboards applied: " + patched);
     }
 
     private static bool IsMathBlackboardMaterial(Material material)
@@ -962,10 +950,6 @@ public class CursedBaldiVisual : MonoBehaviour
         float originalVisibleWorldHeight = CursedBaldiSizing.ReferenceHeightPixels / originalPixelsPerUnit * originalScaleY;
         float desiredWorldScaleX = originalVisibleWorldWidth / CursedBaldiSizing.BodyWidthUnits(cursedSprite);
         float desiredWorldScaleY = originalVisibleWorldHeight / CursedBaldiSizing.VisibleHeightUnits(cursedSprite);
-
-        Debug.Log("Cursed Baldi sizing: imported sprite=" + cursedSprite.rect.width + "x" +
-            cursedSprite.rect.height + ", target body width=" + originalVisibleWorldWidth +
-            ", target height=" + originalVisibleWorldHeight);
 
         float originalFootWorldY = transform.position.y;
         if (original != null)

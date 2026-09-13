@@ -57,7 +57,6 @@ public class CursedFinalExitSequence : MonoBehaviour
             yield break;
         }
 
-        Debug.Log("Final exit locked. Serialized Room 99 DoorScript entrance is active.");
         yield return null;
     }
 
@@ -506,9 +505,6 @@ public class CursedFinalExitSequence : MonoBehaviour
         outline.effectDistance =
             new Vector2(3f, -3f);
 
-        Debug.Log(
-            "Phase 2 complete. Phase 3 password displayed: " +
-            completionCode);
     }
 
     private void CompletePhase2AndQuit()
@@ -517,8 +513,6 @@ public class CursedFinalExitSequence : MonoBehaviour
         phase2CompletionHandled = true;
 
         CursedPhaseManager.UnlockPhase3(completionCode);
-        Debug.Log(
-            "Phase 2 completion tapped. Phase 3 progress saved; closing application.");
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
