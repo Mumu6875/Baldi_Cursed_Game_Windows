@@ -19,6 +19,7 @@ public class CursedFinalExitSequence : MonoBehaviour
     private Text messageText;
     private GameControllerScript activeController;
     private bool completionVisible;
+    private bool phase2CompletionHandled;
     private string completionCode;
 
     public static void EnsureInstalled()
@@ -355,7 +356,8 @@ public class CursedFinalExitSequence : MonoBehaviour
             yield break;
         }
 
-        CursedPhase3Screen.Show();
+        Debug.LogWarning(
+            "Phase 2 completion was requested outside Phase 2. Ignoring request.");
     }
 
     private void ShowPhase2CompletionScreen()
@@ -364,7 +366,6 @@ public class CursedFinalExitSequence : MonoBehaviour
 
         completionVisible = true;
         completionCode = GenerateFourDigitCode();
-        CursedPhaseManager.UnlockPhase3(completionCode);
 
         Texture2D completionTexture =
             Resources.Load<Texture2D>(
@@ -373,8 +374,8 @@ public class CursedFinalExitSequence : MonoBehaviour
         if (completionTexture == null)
         {
             Debug.LogError(
-                "Phase 2 completion image could not be loaded. Opening Phase 3 directly.");
-            ContinueToPhase3();
+                "Phase 2 completion image could not be loaded. Phase 3 remains locked.");
+            completionVisible = false;
             return;
         }
 
@@ -460,7 +461,7 @@ public class CursedFinalExitSequence : MonoBehaviour
             Selectable.Transition.None;
         continueButton.targetGraphic = background;
         continueButton.onClick.AddListener(
-            ContinueToPhase3);
+            CompletePhase2AndQuit);
 
         GameObject codeObject =
             new GameObject(
@@ -506,23 +507,23 @@ public class CursedFinalExitSequence : MonoBehaviour
             new Vector2(3f, -3f);
 
         Debug.Log(
-            "Phase 2 complete. Phase 3 password saved: " +
+            "Phase 2 complete. Phase 3 password displayed: " +
             completionCode);
     }
 
-    private void ContinueToPhase3()
+    private void CompletePhase2AndQuit()
     {
-        completionVisible = false;
+        if (phase2CompletionHandled) return;
+        phase2CompletionHandled = true;
 
-        GameObject completionCanvas =
-            GameObject.Find("Phase 2 Completion Canvas");
-
-        if (completionCanvas != null)
-        {
-            Destroy(completionCanvas);
-        }
-
-        CursedPhase3Screen.Show();
+        CursedPhaseManager.UnlockPhase3(completionCode);
+        Debug.Log(
+            "Phase 2 completion tapped. Phase 3 progress saved; closing application.");
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 
     private static string GenerateFourDigitCode()
