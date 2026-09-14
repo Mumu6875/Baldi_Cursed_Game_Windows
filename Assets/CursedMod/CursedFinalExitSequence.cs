@@ -395,12 +395,8 @@ public class CursedFinalExitSequence : MonoBehaviour
                 typeof(StandaloneInputModule));
         }
 
-#if UNITY_ANDROID || UNITY_IOS
-        CursedMobileInput.Hide();
-#else
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-#endif
 
         AudioListener.pause = true;
         Time.timeScale = 0f;
