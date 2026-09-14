@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -366,14 +367,14 @@ public class CursedFinalExitSequence : MonoBehaviour
         completionVisible = true;
         completionCode = GenerateFourDigitCode();
 
-        Texture2D completionTexture =
+        Texture2D thinkPadTexture =
             Resources.Load<Texture2D>(
-                "CursedMod/Phase2Completion");
+                "CursedMod/CursedThinkPad");
 
-        if (completionTexture == null)
+        if (thinkPadTexture == null)
         {
             Debug.LogError(
-                "Phase 2 completion image could not be loaded. Phase 3 remains locked.");
+                "Cursed Think Pad image could not be loaded. Phase 3 remains locked.");
             completionVisible = false;
             return;
         }
@@ -428,10 +429,10 @@ public class CursedFinalExitSequence : MonoBehaviour
 
         GameObject screen =
             new GameObject(
-                "Continue To Phase 3",
+                "Phase 2 Password Screen",
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
-                typeof(RawImage),
+                typeof(Image),
                 typeof(Button));
 
         screen.transform.SetParent(
@@ -446,11 +447,10 @@ public class CursedFinalExitSequence : MonoBehaviour
         screenRect.offsetMin = Vector2.zero;
         screenRect.offsetMax = Vector2.zero;
 
-        RawImage background =
-            screen.GetComponent<RawImage>();
+        Image background =
+            screen.GetComponent<Image>();
 
-        background.texture = completionTexture;
-        background.color = Color.white;
+        background.color = Color.black;
         background.raycastTarget = true;
 
         Button continueButton =
@@ -462,48 +462,75 @@ public class CursedFinalExitSequence : MonoBehaviour
         continueButton.onClick.AddListener(
             CompletePhase2AndQuit);
 
+        GameObject thinkPadObject =
+            new GameObject(
+                "Cursed Think Pad Password Display",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(RawImage),
+                typeof(AspectRatioFitter));
+
+        thinkPadObject.transform.SetParent(
+            screen.transform,
+            false);
+
+        RectTransform thinkPadRect =
+            thinkPadObject.GetComponent<RectTransform>();
+
+        thinkPadRect.anchorMin = Vector2.zero;
+        thinkPadRect.anchorMax = Vector2.one;
+        thinkPadRect.offsetMin = Vector2.zero;
+        thinkPadRect.offsetMax = Vector2.zero;
+
+        RawImage thinkPadImage =
+            thinkPadObject.GetComponent<RawImage>();
+
+        thinkPadImage.texture = thinkPadTexture;
+        thinkPadImage.color = Color.white;
+        thinkPadImage.raycastTarget = false;
+
+        AspectRatioFitter thinkPadFitter =
+            thinkPadObject.GetComponent<AspectRatioFitter>();
+
+        thinkPadFitter.aspectMode =
+            AspectRatioFitter.AspectMode.FitInParent;
+        thinkPadFitter.aspectRatio = 1448f / 1086f;
+
         GameObject codeObject =
             new GameObject(
                 "Random Four Digit Code",
                 typeof(RectTransform),
                 typeof(CanvasRenderer),
-                typeof(Text),
-                typeof(Outline));
+                typeof(TextMeshProUGUI));
 
         codeObject.transform.SetParent(
-            screen.transform,
+            thinkPadObject.transform,
             false);
 
         RectTransform codeRect =
             codeObject.GetComponent<RectTransform>();
 
-        codeRect.anchorMin = new Vector2(0.50f, 0.395f);
-        codeRect.anchorMax = new Vector2(0.812f, 0.751f);
+        codeRect.anchorMin =
+            new Vector2(462f / 1448f, 1f - 570f / 1086f);
+        codeRect.anchorMax =
+            new Vector2(997f / 1448f, 1f - 333f / 1086f);
         codeRect.offsetMin = Vector2.zero;
         codeRect.offsetMax = Vector2.zero;
 
-        Text codeText = codeObject.GetComponent<Text>();
+        TextMeshProUGUI codeText =
+            codeObject.GetComponent<TextMeshProUGUI>();
+
         codeText.text = completionCode;
-        codeText.font =
-            Resources.GetBuiltinResource<Font>(
-                "LegacyRuntime.ttf");
-        codeText.fontSize = 132;
-        codeText.fontStyle = FontStyle.Bold;
-        codeText.alignment = TextAnchor.MiddleCenter;
-        codeText.color =
-            new Color(0.055f, 0.012f, 0.012f, 1f);
-        codeText.resizeTextForBestFit = true;
-        codeText.resizeTextMinSize = 72;
-        codeText.resizeTextMaxSize = 140;
+        codeText.font = TMP_Settings.defaultFontAsset;
+        codeText.fontSize = 160f;
+        codeText.fontStyle = FontStyles.Bold;
+        codeText.alignment = TextAlignmentOptions.Center;
+        codeText.color = Color.white;
+        codeText.enableAutoSizing = true;
+        codeText.fontSizeMin = 72f;
+        codeText.fontSizeMax = 180f;
+        codeText.textWrappingMode = TextWrappingModes.NoWrap;
         codeText.raycastTarget = false;
-
-        Outline outline =
-            codeObject.GetComponent<Outline>();
-
-        outline.effectColor =
-            new Color(0.48f, 0f, 0f, 0.92f);
-        outline.effectDistance =
-            new Vector2(3f, -3f);
 
     }
 

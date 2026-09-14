@@ -115,7 +115,7 @@ public sealed class CursedBuildValidation : IPreprocessBuildWithReport
     private const string RulerAudioAssetPath = "Assets/AudioClip/Characters/Baldi/Sounds/BAL_Slap.wav";
     private const string HelpMeExitAssetPath = "Assets/Resources/CursedMod/HelpMeExitSign.png";
     private const string Phase2SchoolRulesAssetPath = "Assets/Resources/CursedMod/SchoolRulesPosterPhase2.png";
-    private const string Phase2CompletionAssetPath = "Assets/Resources/CursedMod/Phase2Completion.png";
+    private const string CursedThinkPadAssetPath = "Assets/Resources/CursedMod/CursedThinkPad.png";
     private const string Phase3PasswordAssetPath = "Assets/Resources/CursedMod/Phase3Password.png";
     private const string Phase4FinalAssetPath = "Assets/Resources/CursedMod/Phase4Final.png";
     private const string TestRoomPosterAssetPath = "Assets/Resources/CursedMod/TestRoomEntityPoster.png";
@@ -165,16 +165,16 @@ public sealed class CursedBuildValidation : IPreprocessBuildWithReport
         }
         Debug.Log("Verified Phase 2 school rules poster: " + phase2SchoolRules.width + "x" + phase2SchoolRules.height);
 
-        if (!File.Exists(Phase2CompletionAssetPath))
+        if (!File.Exists(CursedThinkPadAssetPath))
         {
-            throw new BuildFailedException("Required Phase 2 completion image is missing: " + Phase2CompletionAssetPath);
+            throw new BuildFailedException("Required cursed Think Pad image is missing: " + CursedThinkPadAssetPath);
         }
-        Texture2D completion = ImportTextureWithoutNpotScaling(Phase2CompletionAssetPath);
-        if (completion == null || completion.width != 1672 || completion.height != 941)
+        Texture2D cursedThinkPad = ImportTextureWithoutNpotScaling(CursedThinkPadAssetPath);
+        if (cursedThinkPad == null || cursedThinkPad.width != 1448 || cursedThinkPad.height != 1086)
         {
-            throw new BuildFailedException("Phase 2 completion image must import as 1672x941: " + Phase2CompletionAssetPath + FormatImportedSize(completion));
+            throw new BuildFailedException("Cursed Think Pad image must import as 1448x1086: " + CursedThinkPadAssetPath + FormatImportedSize(cursedThinkPad));
         }
-        Debug.Log("Verified Phase 2 completion image: " + completion.width + "x" + completion.height);
+        Debug.Log("Verified cursed Think Pad image: " + cursedThinkPad.width + "x" + cursedThinkPad.height);
 
         if (!File.Exists(Phase3PasswordAssetPath))
         {
