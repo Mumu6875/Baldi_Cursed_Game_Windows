@@ -210,7 +210,7 @@ public class CursedFinalExitSequence : MonoBehaviour
 
             endTrigger.transform.SetParent(room, false);
             endTrigger.transform.localPosition =
-                new Vector3(0f, 1.7f, 7.5f);
+                new Vector3(0f, 1.7f, 644.5f);
 
             BoxCollider endBox =
                 endTrigger.AddComponent<BoxCollider>();
