@@ -2,7 +2,7 @@
 
 ## Required environment
 
-- Unity Editor `6000.3.22f1`
+- Unity Editor `6000.6.2f1`
 - Windows Build Support (IL2CPP)
 - Visual Studio 2019 or newer with C++ tools and Windows SDK 10.0.19041.0 or newer
 - Windows 10 21H1 or newer for the released player
@@ -10,7 +10,7 @@
 ## Interactive build
 
 1. Run `./tools/verify_windows_repo.sh` from the repository root.
-2. Open the project in Unity `6000.3.22f1`.
+2. Open the project in Unity `6000.6.2f1`.
 3. Wait for asset import and script compilation to finish.
 4. Open `Assets/Scene/MainMenu.unity` and run a smoke test.
 5. Select `Cursed Baldi > Build Windows x86_64`.

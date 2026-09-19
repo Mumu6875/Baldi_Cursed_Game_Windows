@@ -29,7 +29,7 @@ Source page: https://pspleaffox.itch.io/baldi-open-source-classic-party
 
 ## Build
 
-Use Unity **6000.3.22f1** and select `Cursed Baldi > Build Windows x86_64`.
+Use Unity **6000.6.2f1** and select `Cursed Baldi > Build Windows x86_64`.
 The repository rejects Android, 32-bit Windows and other build targets during
 pre-build validation. See `WINDOWS_BUILD_README.md` for interactive and batch
 build instructions.

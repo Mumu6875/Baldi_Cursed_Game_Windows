@@ -1,6 +1,6 @@
 # Unity 6.3 LTS migration status
 
-Target Editor: `6000.3.22f1` (changeset `1c726e1fb402`).
+Target Editor: `6000.6.2f1` (changeset `770e33f6875c`).
 
 Prepared changes:
 

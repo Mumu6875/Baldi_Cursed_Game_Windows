@@ -1,6 +1,6 @@
 # Baldi Cursed Classroom — Windows x86_64
 
-Windows 64-bit edition of Baldi Cursed Classroom, built with Unity 6000.3.22f1.
+Windows 64-bit edition of Baldi Cursed Classroom, built with Unity 6000.6.2f1.
 
 - Platform: Windows 10 21H1 or newer
 - Architecture: Intel/AMD 64-bit (`x86_64`)
